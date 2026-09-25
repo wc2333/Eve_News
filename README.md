@@ -80,7 +80,7 @@ evenews web --port 9000 --no-browser   # 换端口 / 服务器上不自动开浏
 | `logo_text` | 图标读不到、或邮件客户端不显示图片时的文字报头：CTONE |
 | `site` | 页脚官网链接：https://www.kzhytech.com |
 | `kicker` | 报头副标题：凯铮寰宇 CTONE · 算力驱动未来 |
-| `theme` | `light`（纸白底）或 `dark`（官网那种近黑蓝 `#060b14`）。设置页下拉切换时会把该主题的全套色值回填进下面的颜色框 |
+| `theme` | 默认 `light`（纸白底 + 官网蓝）；想要官网那种近黑蓝底改成 `dark` 即可。设置页下拉切换时会把该主题的全套色值回填进下面的颜色框 |
 | `background` / `card` / `text` / `body` / `muted` / `accent` / `label` | 逐个覆盖主题色，**留空即跟随 `theme` 的色板**。色板只在后端一处：`evenews.render.PALETTES`，邮件模板和设置页共用 |
 
 - 图标以 `data:` URI 内嵌进落盘的 `digest.html`，本地直接双击打开也不掉图；超过 180 KB 自动不放图，报头退回文字，不会把邮件撑爆。

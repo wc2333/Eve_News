@@ -7,7 +7,7 @@ out_dir: out
 state_dir: state
 
 brand:
-  theme: dark                     # light 纸白 / dark 官网近黑蓝底；改一个字即可切换
+  theme: light                    # light 纸白（默认）/ dark 官网近黑蓝底；改一个字即可切换
   company: 凯铮寰宇
   logo_text: CTONE                # 报头文字：没有图标、或邮件客户端不显示图片时兜底
   logo_file: brand-logo-kzhy.jpg   # 官网公司标；换成 brand-logo-ctone.png 就是 CTONE 字标
@@ -16,7 +16,7 @@ brand:
   title: AI 每日资讯
   classification: 内部参考
   footer_note: 自动生成 · 仅供内部参考，转载请注明出处
-  # 下面留空就跟着 theme 的色板走（dark 取自官网：底 #060b14 / 卡片 #0a1226 / 强调 #00a5ef / 正文 #dce6f3）
+  # 下面留空就跟着 theme 的色板走（light：底 #f5f3ee / 卡片 #fffdf8 / 强调 #007492 / 正文 #24282f）
   background: ""                  # 页面底色
   accent: ""                      # 主强调色（分隔线、报头字标）
   label: ""                       # 链接、板块标签
