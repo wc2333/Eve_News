@@ -276,6 +276,7 @@ class CollectionConfig:
     timeout: int = 25
     retries: int = 1
     proxy: str = ""
+    fetch_content: bool = True    # 订阅正文太短的来源，去抓一次原文页面
 
     @classmethod
     def from_dict(cls, raw: dict) -> "CollectionConfig":
@@ -289,6 +290,7 @@ class CollectionConfig:
             dedupe_days=int(raw.get("dedupe_days") or 10),
             timeout=int(raw.get("timeout") or 25),
             retries=int(raw.get("retries") or 1),
+            fetch_content=bool(raw.get("fetch_content", True)),
             proxy=_proxy(raw),
         )
 

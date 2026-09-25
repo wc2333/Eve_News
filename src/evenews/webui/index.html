@@ -111,6 +111,8 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
       <div class="row"><label>per_source_limit</label><input type="number" data-path="collection.per_source_limit"></div>
       <div class="row"><label>dedupe_days</label><input type="number" data-path="collection.dedupe_days"></div>      <div class="row"><label>timeout</label><input type="number" data-path="collection.timeout"></div>
       <div class="row"><label>retries</label><input type="number" data-path="collection.retries"></div>
+      <div class="row"><label>抓原文正文</label><div class="check"><input type="checkbox" data-path="collection.fetch_content"></div></div>
+      <div class="note">订阅正文不足 320 字的来源，入围后自动抓一次原文页，介绍才有料写满 300 字</div>
       <div class="row"><label>代理 proxy</label><input type="text" placeholder="留空=跟随系统；none=不走代理" data-path="collection.proxy"></div>
       <div class="row"><label>模型 proxy</label><input type="text" placeholder="留空=跟随系统；none=不走代理" data-path="llm.proxy"></div>
       <div class="row"><label>search.provider</label><select data-path="llm.search.provider">

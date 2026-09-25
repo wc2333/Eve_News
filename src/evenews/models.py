@@ -68,6 +68,7 @@ class Article:
     source: str
     published: str = ""
     raw_summary: str = ""
+    body: str = ""            # 抓回来的原文正文，只在订阅太短时才有
     section: str = ""
     summary: str = ""
     why: str = ""

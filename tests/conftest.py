@@ -32,6 +32,7 @@ def raw_config() -> dict:
           tasks: {select: true, classify: true, summarize: true, lead: true}
         collection:
           mode: feeds
+          fetch_content: false   # 单测不碰外网：抓正文另有 test_article.py
           lookback_hours: 0
           dedupe_days: 7
           require_keywords: [AI, 大模型, 算力, 模型, 机器人]

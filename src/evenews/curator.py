@@ -6,6 +6,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 
+from .article import enrich_articles, material
 from .config import CollectionConfig, LLMConfig
 from .llm import BaseLLM
 from .models import Article, Digest, Section, SectionDigest
@@ -109,7 +110,7 @@ def _ask_model(llm: BaseLLM, section: Section, pairs: list[tuple[int, Article]])
             {
                 "ref": ref,
                 "title": article.title,
-                "summary": article.raw_summary[:1200],
+                "summary": material(article),
                 "source": article.source,
                 "published": article.published,
             }
@@ -197,6 +198,15 @@ def curate_section(
 
     kept.sort(key=lambda pair: pair[1], reverse=True)
     pool = kept[: max(section.max_items * 3, llm_cfg.batch_size)]
+
+    if collection.fetch_content:
+        # Only the shortlist pays for this, and only when the feed gave us a one-liner.
+        enrich_articles(
+            [article for article, _ in pool],
+            timeout=collection.timeout,
+            proxy=collection.proxy,
+            headers=collection.headers,
+        )
 
     decisions: dict[int, dict] = {}
     if llm_cfg.task_on("select"):
