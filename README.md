@@ -71,18 +71,21 @@ evenews web --port 9000 --no-browser   # 换端口 / 服务器上不自动开浏
 
 ## 公司品牌
 
-`brand` 段已经按 **凯铮寰宇 CTONE**（官网 www.kzhytech.com）配好，全部可在设置页「报头与署名」里改：
+`brand` 段已经按集团 **创通 CTONE** 与子公司 **凯铮寰宇**（官网 www.kzhytech.com）配好，全部可在设置页「报头与署名」里改。报头中间一行和页脚署名都是 **集团 · 公司 · kicker** 的顺序：
 
 | 字段 | 作用 |
 | --- | --- |
-| `company` | 报头与页脚署名：凯铮寰宇 |
-| `logo_file` | 报头图标。内置两枚取自官网：`brand-logo-kzhy.jpg`（公司标，/icon.jpg）、`brand-logo-ctone.png`（CTONE 字标，/images/logo.png）；也可以填本机绝对路径 |
-| `logo_text` | 图标读不到、或邮件客户端不显示图片时的文字报头：CTONE |
+| `group` | 集团名，排在公司名前面：创通 CTONE |
+| `company` | 集团下的公司名：凯铮寰宇 |
+| `logo_file` | 报头图标，用**透明底**版本：`brand-logo-kzhy.png`（公司标，已从官网那张白底 /icon.jpg 抠成透明）、`brand-logo-ctone.png`（CTONE 字标）；也可以填本机绝对路径 |
+| `logo_text` | 图标读不到、或邮件客户端不显示图片时的文字报头：创通 CTONE |
 | `site` | 页脚官网链接：https://www.kzhytech.com |
-| `kicker` | 报头副标题：凯铮寰宇 CTONE · 算力驱动未来 |
+| `kicker` | 报头那一行的尾缀（集团和公司由 `group` / `company` 自动排前面）：算力驱动未来 |
 | `theme` | 默认 `light`（纸白底 + 官网蓝）；想要官网那种近黑蓝底改成 `dark` 即可。设置页下拉切换时会把该主题的全套色值回填进下面的颜色框 |
 | `background` / `card` / `text` / `body` / `muted` / `accent` / `label` | 逐个覆盖主题色，**留空即跟随 `theme` 的色板**。色板只在后端一处：`evenews.render.PALETTES`，邮件模板和设置页共用 |
 
+- logo 直接画在版面上，不再垫白色小方块：白底图抠成透明之后，纸白底上就是那抹蓝，深色底上不会再贴一块白斑。
+- **深色版式自动换图**：`theme: dark` 时优先找同名 `-dark` 变体（`brand-logo-kzhy-dark.png` 就是把公司标染成浅蓝 #7ED1F8 的另一版），没有变体就用原图。给自己的图标配深色版，只要在同一目录放一张 `原名-dark.png`。
 - 图标以 `data:` URI 内嵌进落盘的 `digest.html`，本地直接双击打开也不掉图；超过 180 KB 自动不放图，报头退回文字，不会把邮件撑爆。
 - 发信时 `email.attach_logo`（默认 `true`）改为把 logo 作为**内联附件**（`Content-ID: <evenews-logo>`）随邮件发出，正文里引用 `cid:evenews-logo`。桌面 Outlook / 企业邮客户端不用下载附件就能看到报头，也不会因为图片代理而掉图。
 - 深色版式做了文字层级：正文用 `body`（深色下 `#dce6f3`）而不是纯白，标题 / 正文 / 元信息三级分明，条目之间 1px 分隔线、编辑点评带左边线。邮件外层 `<table>` 带 `bgcolor`，并声明 `color-scheme`，Outlook 与系统深色模式不会把配色刷花。

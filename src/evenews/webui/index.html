@@ -57,7 +57,7 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
 </head>
 <body>
 <header>
-  <img id="brandlogo" alt="" src="" style="display:none;height:24px;align-self:center;border:1px solid var(--line);background:#fffdf8;padding:3px 5px;">
+  <img id="brandlogo" alt="" src="" style="display:none;height:26px;align-self:center;">
   <h1 id="apptitle">AI 每日资讯 · 设置</h1>
   <span class="meta" id="cfgpath">加载中…</span>
   <span class="meta" id="secretbadge"></span>
@@ -155,7 +155,8 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
   <div class="card">
     <h2>报头与署名</h2>
     <div class="grid2">
-      <div class="row"><label>company</label><input type="text" data-path="brand.company"></div>
+      <div class="row"><label>group（集团）</label><input type="text" data-path="brand.group"></div>
+      <div class="row"><label>company（公司）</label><input type="text" data-path="brand.company"></div>
       <div class="row"><label>logo_text</label><input type="text" data-path="brand.logo_text"></div>
       <div class="row"><label>theme</label><select data-path="brand.theme"><option value="light">light（纸白）</option><option value="dark">dark（官网深色）</option></select></div>
       <div class="row"><label>logo_file</label><input type="text" data-path="brand.logo_file" placeholder="brand-logo-kzhy.jpg 或图片绝对路径"></div>
@@ -175,7 +176,7 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
       <div class="row"><label>muted</label><input type="text" data-path="brand.muted" placeholder="次要信息色，留空跟 theme"></div>
     </div>
     <p class="hint">logo_file 填 evenews 自带文件名（brand-logo-kzhy.jpg 公司标 / brand-logo-ctone.png 产品字标），或本机图片的绝对路径；图片会以 base64 内嵌进邮件，不依赖外链。颜色留空就跟着 theme 走（色板由后端给出，与邮件完全一致）；选了 theme 会顺手把色值填进来，还能逐条微调。改完点保存，本页配色与图标会跟着变。</p>
-    <p class="hint"><img id="logopreview" alt="" src="" style="height:32px;background:#fffdf8;border:1px solid var(--line);padding:4px;display:none;"> <span id="logohint">未设置图标</span></p>
+    <p class="hint"><img id="logopreview" alt="" src="" style="height:34px;display:none;vertical-align:middle;"> <span id="logohint">未设置图标</span></p>
     <div class="actions"><button class="act primary" data-save="settings">保存</button></div>
   </div>
 </section>

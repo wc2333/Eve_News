@@ -15,7 +15,7 @@ from .feeds import Harvest, harvest
 from .llm import build_llm
 from .mailer import MailError, send_digest
 from .models import Digest, Section, Source
-from .render import render_html, render_markdown, render_text, resolve_logo, subject_for, write_outputs
+from .render import palette, render_html, render_markdown, render_text, resolve_logo, subject_for, write_outputs
 from .search import SearchConfig, build_queries
 from .state import StateStore
 
@@ -174,7 +174,9 @@ def run_once(
         log.error("本期没有入选条目，跳过发送")
     elif send and config.email.enabled:
         try:
-            mark, mark_mime = resolve_logo(config.brand) if config.email.attach_logo else (b"", "")
+            mark, mark_mime = (
+                resolve_logo(config.brand, palette(config.brand)["theme"]) if config.email.attach_logo else (b"", "")
+            )
             report.recipients = send_digest(
                 config.email,
                 subject=subject,

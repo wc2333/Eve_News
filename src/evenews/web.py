@@ -264,7 +264,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             if path == "/api/brand-logo":
                 from .render import resolve_logo
 
-                raw, mime = resolve_logo(self._config().brand)
+                brand = self._config().brand
+                raw, mime = resolve_logo(brand, brand.theme)
                 if not raw:
                     raise WebError("没有配置 brand.logo_file")
                 return self._send(200, raw, mime)

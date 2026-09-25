@@ -260,6 +260,37 @@ def test_a_write_up_that_ran_long_is_trimmed_between_sentences():
     assert len(clamp_brief(runaway, 100, 100)) <= 100, "a single monster sentence still gets capped"
 
 
+def test_the_mark_follows_the_theme():
+    from evenews.config import Brand
+    from evenews.render import resolve_logo
+
+    png = bytes([0x89, 0x50, 0x4E, 0x47])
+    light, mime = resolve_logo(Brand(logo_file="brand-logo-kzhy.png"), "light")
+    dark, dark_mime = resolve_logo(Brand(logo_file="brand-logo-kzhy.png"), "dark")
+    assert light[:4] == png == dark[:4] and mime == dark_mime == "image/png"
+    assert light != dark, "the dark brief gets the light-tinted twin, not a white square"
+    assert len(dark) < len(light), "the flat tinted twin is the smaller file"
+
+    fallback, _ = resolve_logo(Brand(logo_file="brand-logo-ctone.png"), "dark")
+    assert fallback, "a mark without a dark twin still shows up"
+
+
+def test_the_group_leads_the_company_in_the_header():
+    from evenews.config import Brand
+
+    brand = Brand(
+        group="创通 CTONE",
+        company="凯铮寰宇",
+        kicker="算力驱动未来",
+        footer_note="自动生成 · 仅供内部参考，转载请注明出处",
+        site="https://www.kzhytech.com",
+    )
+    digest = Digest(run_date="2026-09-25", generated_at="2026-09-25T08:00:00", timezone="Asia/Shanghai")
+    html = render_html(digest, brand)
+    assert "创通 CTONE · 凯铮寰宇 · 算力驱动未来" in html
+    assert "创通 CTONE · 凯铮寰宇" in html.split("转载请注明出处")[-1], "the footer signs group then company"
+
+
 def test_a_cut_off_answer_keeps_the_items_that_did_arrive():
     from evenews.llm import extract_json
 

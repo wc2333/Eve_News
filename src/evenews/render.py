@@ -63,31 +63,40 @@ def palette(brand: Brand) -> dict[str, str]:
 
 
 
-def resolve_logo(brand: Brand) -> tuple[bytes, str]:
-    """The masthead mark: a path in the config, or a file shipped in evenews/data."""
+def resolve_logo(brand: Brand, theme: str = "") -> tuple[bytes, str]:
+    """The masthead mark: a path in the config, or a file shipped in evenews/data.
+
+    A dark brief prefers a `<name>-dark.png` sibling: a mark cut out of a white square looks
+    pasted onto #060b14, so the shipped marks carry a light-tinted twin next to the original.
+    """
     name = str(brand.logo_file or "").strip()
     if not name:
         return b"", ""
+    base = Path(name)
+    wanted = [base.name]
+    if str(theme or "").strip().lower() == "dark":
+        wanted = [f"{base.stem}-dark{ext}" for ext in (".png", ".jpg", ".jpeg")] + wanted
     mime = ""
-    for candidate in (Path(name), DATA_DIR / Path(name).name):
-        try:
-            if not candidate.is_file():
+    for candidate_name in wanted:
+        for candidate in (base.with_name(candidate_name), DATA_DIR / candidate_name):
+            try:
+                if not candidate.is_file():
+                    continue
+                raw = candidate.read_bytes()
+            except OSError:
                 continue
-            raw = candidate.read_bytes()
-        except OSError:
-            continue
-        mime = LOGO_MIME.get(candidate.suffix.lower(), "application/octet-stream")
-        if len(raw) > MAX_LOGO_BYTES:
-            log.warning("logo %s 有 %s 字节，超过 %s，邮件里就不放图了", candidate, len(raw), MAX_LOGO_BYTES)
-            return b"", ""
-        return raw, mime
+            mime = LOGO_MIME.get(candidate.suffix.lower(), "application/octet-stream")
+            if len(raw) > MAX_LOGO_BYTES:
+                log.warning("logo %s 有 %s 字节，超过 %s，邮件里就不放图了", candidate, len(raw), MAX_LOGO_BYTES)
+                return b"", ""
+            return raw, mime
     if name:
         log.warning("找不到品牌图标 %s，报头退回文字", name)
     return b"", ""
 
 
-def logo_data_uri(brand: Brand) -> str:
-    raw, mime = resolve_logo(brand)
+def logo_data_uri(brand: Brand, theme: str = "") -> str:
+    raw, mime = resolve_logo(brand, theme)
     if not raw:
         return ""
     return f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
@@ -142,11 +151,12 @@ def build_context(digest: Digest, brand: Brand) -> dict[str, Any]:
     source_rows = [sources[i : i + 2] for i in range(0, len(sources), 2)]
     source_rows = [row + [None] * (2 - len(row)) for row in source_rows]
 
+    colors = palette(brand)
     return {
         "digest": digest,
         "brand": brand,
-        "logo": logo_data_uri(brand),
-        "c": palette(brand),
+        "logo": logo_data_uri(brand, colors["theme"]),
+        "c": colors,
         "groups": groups,
         "sources": sources,
         "source_rows": source_rows,

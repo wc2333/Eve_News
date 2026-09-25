@@ -111,6 +111,7 @@ def _source_pool(raw: Any) -> dict[str, dict]:
 
 @dataclass
 class Brand:
+    group: str = ""               # 集团名，排在子公司名前面
     company: str = ""
     logo_text: str = ""
     logo_file: str = ""

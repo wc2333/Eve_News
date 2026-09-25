@@ -59,8 +59,10 @@ def test_default_template_mentions_every_knob():
 
 def test_shipped_defaults_carry_the_company_identity(tmp_path):
     config = Config.from_dict({}, tmp_path / "config.yaml")
+    assert config.brand.group == "创通 CTONE", "the group leads the subsidiary"
     assert config.brand.company == "凯铮寰宇"
-    assert config.brand.logo_file == "brand-logo-kzhy.jpg"
+    assert config.brand.kicker == "算力驱动未来"
+    assert config.brand.logo_file == "brand-logo-kzhy.png", "a transparent mark, not a white square"
     assert "kzhytech.com" in config.brand.site
     assert config.brand.theme == "light"
     assert not config.brand.background, "colours come from the theme palette unless overridden"
