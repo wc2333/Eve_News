@@ -78,7 +78,7 @@ evenews web --port 9000 --no-browser   # 换端口 / 服务器上不自动开浏
 | `group` | 集团名，排在公司名前面：创通 CTONE |
 | `company` | 集团下的公司名：凯铮寰宇 |
 | `logo_file` | 报头图标，用**透明底**版本：`brand-logo-kzhy.png`（公司标，已从官网那张白底 /icon.jpg 抠成透明）、`brand-logo-ctone.png`（CTONE 字标）；也可以填本机绝对路径 |
-| `logo_text` | 图标读不到、或邮件客户端不显示图片时的文字报头：创通 CTONE |
+| `logo_text` | 文字报头，只在 `logo_file` 读不到或邮件客户端拦掉图片时出现（有图时不重复显示，集团名由报头中间一行给出）：创通 CTONE |
 | `site` | 页脚官网链接：https://www.kzhytech.com |
 | `kicker` | 报头那一行的尾缀（集团和公司由 `group` / `company` 自动排前面）：算力驱动未来 |
 | `theme` | 默认 `light`（纸白底 + 官网蓝）；想要官网那种近黑蓝底改成 `dark` 即可。设置页下拉切换时会把该主题的全套色值回填进下面的颜色框 |

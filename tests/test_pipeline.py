@@ -371,6 +371,7 @@ def test_the_company_mark_is_embedded_in_the_brief():
     page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), with_logo)
     assert "data:image/png;base64," in page, "an email must not depend on external image hosts"
     assert "kzhytech.com" in page and "凯铮寰宇" in page
+    assert "CTONE" not in page, "the mark carries the group name already - a text copy doubles up"
 
 
 def test_a_missing_logo_file_degrades_to_text():
@@ -406,3 +407,12 @@ def test_the_sent_copy_uses_the_inline_logo_part():
     assert "cid:evenews-logo" in html_part and "data:image" not in html_part
     images = [part for part in message.walk() if part.get_content_maintype() == "image"]
     assert len(images) == 1 and images[0]["Content-ID"] == "<evenews-logo>"
+
+
+def test_the_date_outsizes_the_fine_print_it_shares_a_strip_with():
+    import re
+
+    page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), BRAND)
+    date_cell = re.search(r"<td[^>]*>2026-09-25</td>", page).group(0)
+    assert "font-size:19px" in date_cell, "the date is what people read first on the strip"
+    assert "font-size:19px" not in page[page.index(date_cell) + len(date_cell):page.index("</tr>", page.index(date_cell))], "classification and timestamp stay small"
