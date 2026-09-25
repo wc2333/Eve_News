@@ -177,3 +177,18 @@ def test_offline_preview_and_model_check(site):
 
     status, body = client.call("POST", "/api/action", {"action": "teleport"})
     assert status == 400 and "未知操作" in body["error"]
+
+
+def test_latest_output_prefers_real_dates(site):
+    client, _, tmp_path = site
+    day = tmp_path / "out" / "2026-09-20"
+    day.mkdir(parents=True)
+    (day / "digest.html").write_text("<html></html>", encoding="utf-8")
+    stray = tmp_path / "out" / "zzz-stray"
+    stray.mkdir(parents=True)
+    (stray / "notes.txt").write_text("x", encoding="utf-8")
+
+    status, state = client.call("GET", "/api/state")
+    assert status == 200 and state["latest"]["date"] == "2026-09-20"
+    status, page = client.call("GET", "/api/preview")
+    assert status == 200 and page == "<html></html>"

@@ -11,8 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-import subprocess
-import sys
+import re
 import traceback
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -23,7 +22,7 @@ from urllib.parse import parse_qs, urlparse
 import yaml
 
 from .config import Config, ConfigError, load_dotenv
-from .mailer import MailError, send_digest
+from .mailer import send_digest
 from .pipeline import SAMPLE_FEEDS, run_once
 from .state import StateStore
 
@@ -32,6 +31,7 @@ log = logging.getLogger("evenews.web")
 WEB_DIR = Path(__file__).resolve().parent / "webui"
 DEFAULT_PORT = 8765
 CANDIDATE_NAME = ".config.candidate.yaml"
+DATE_DIR = re.compile(r"\d{4}-\d{2}-\d{2}$")
 ENV_FILE = ".env"
 
 
@@ -160,10 +160,12 @@ def latest_output(config: Config) -> dict:
     root = Path(config.out_root)
     if not root.is_dir():
         return {}
-    days = sorted([folder for folder in root.iterdir() if folder.is_dir()], key=lambda p: p.name, reverse=True)
-    if not days:
+    folders = [item for item in root.iterdir() if item.is_dir()]
+    days = sorted([item for item in folders if DATE_DIR.match(item.name)], reverse=True)
+    candidates = days or sorted(folders, key=lambda item: item.name, reverse=True)
+    if not candidates:
         return {}
-    newest = days[0]
+    newest = candidates[0]
     return {"date": newest.name, "files": [item.name for item in sorted(newest.iterdir())]}
 
 
