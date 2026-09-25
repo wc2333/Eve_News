@@ -226,7 +226,8 @@ def test_the_model_is_asked_for_a_longer_analysis(config, fixtures_dir):
         run_date="2026-09-25",
     )
     assert recorded, "the curator must actually consult the model"
-    assert any("300-400 个汉字" in call for call in recorded), "the brief asks for a 300-400 字 write-up"
+    assert any("240-320 个汉字" in call for call in recorded), "the brief asks for a write-up that lands inside 300-400 字"
+    assert any("超过 400 字" in call for call in recorded), "the ceiling is stated so the model stops writing"
     assert any("背景" in call for call in recorded), "the brief asks for context, not a rephrased headline"
 
 
@@ -235,15 +236,28 @@ def test_the_write_up_budget_follows_the_token_cap():
     from evenews.curator import summary_rule
 
     roomy = summary_rule(MockLLM(LLMConfig(max_output_tokens=8000, batch_size=8)), 8)
-    assert roomy.startswith("300-400 个汉字"), "the default budget is the full write-up"
+    assert roomy.startswith("240-320 个汉字"), "the default asks for the 0.8 band"
 
     tuned = summary_rule(MockLLM(LLMConfig(summary_min=200, summary_max=260, max_output_tokens=32000)), 4)
-    assert tuned.startswith("200-260 个汉字"), "the length dial is honoured"
+    assert tuned.startswith("160-208 个汉字"), "the length dial is honoured"
 
     shrunk = summary_rule(MockLLM(LLMConfig(max_output_tokens=1500, batch_size=8)), 8)
     low, high = [int(part) for part in shrunk.split("个汉字")[0].split("-")]
     assert 120 <= low < high < 300, shrunk
-    assert summary_rule(MockLLM(LLMConfig(max_output_tokens=0)), 0).startswith("300-400 个汉字")
+    assert summary_rule(MockLLM(LLMConfig(max_output_tokens=0)), 0).startswith("240-320 个汉字")
+
+
+def test_a_write_up_that_ran_long_is_trimmed_between_sentences():
+    from evenews.curator import clamp_brief
+
+    sentence = "这是一句足够长的介绍内容，用来模拟模型拿到材料之后一路写下去的句子。"
+    long_brief = sentence * 10
+    trimmed = clamp_brief(long_brief, 100, 200)
+    assert len(trimmed) <= 200 and len(trimmed) >= 170, "keep whole sentences, drop the tail"
+    assert trimmed.endswith("。"), "never cut in the middle of a sentence"
+    assert clamp_brief("只有一句。", 300, 400) == "只有一句。", "short material stays short"
+    runaway = ("没有句号的长串" * 40)[:250] + "。尾巴"
+    assert len(clamp_brief(runaway, 100, 100)) <= 100, "a single monster sentence still gets capped"
 
 
 def test_a_cut_off_answer_keeps_the_items_that_did_arrive():

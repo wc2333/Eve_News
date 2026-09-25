@@ -69,28 +69,50 @@ def is_relevant(article: Article, cfg: CollectionConfig) -> bool:
 
 
 SUMMARY_CHARS = (300, 400)
+OVERSHOOT = 0.8   # 模型拿到材料就往长了写：实测目标 400 字，实收 510-580 字，所以按 0.8 要货
+SENTENCE_END = re.compile(r"(?<=[。！？!?])")
 
 
 def summary_rule(llm: BaseLLM, count: int) -> str:
     """How long one write-up may run, given what the model can hand back in a single call."""
     low = int(getattr(llm.cfg, "summary_min", SUMMARY_CHARS[0]) or SUMMARY_CHARS[0])
     high = max(low, int(getattr(llm.cfg, "summary_max", SUMMARY_CHARS[1]) or SUMMARY_CHARS[1]))
+    asked_low = max(100, int(low * OVERSHOOT))
+    asked_high = max(asked_low + 20, int(high * OVERSHOOT))
     budget = int(getattr(llm.cfg, "max_output_tokens", 0) or 0)
     if budget > 0 and count > 0:
         room = int(budget * 1.4 / count) - 60  # 汉字约 1.4 字/token，再扣掉分数与关键词等字段
-        if room < high:                     # only bite when the model genuinely cannot write that much
-            high = max(120, room)
-            low = min(low, max(120, high - 80))
+        if room < asked_high:               # only bite when the model genuinely cannot write that much
+            asked_high = max(100, room)
+            asked_low = min(asked_low, max(100, asked_high - 60))
     return (
-        f"{low}-{high} 个汉字，这是硬指标：不少于 {low} 字，最多 {high} 字，写超了算不合格。一段连贯中文："
+        f"{asked_low}-{asked_high} 个汉字（超过 {high} 字的部分会被裁掉，别白费笔墨）。一段连贯中文："
         "先用一句话交代背景（这件事此前是什么状态），"
-        "再说清今天到底发生了什么、主体是谁、关键数字参数与时间点，"
-        "有官方说法、各方回应或可对比的数据就一并写上，"
-        "最后一句给出影响或对读者的意义。"
+        "再说清今天到底发生了什么、主体是谁、关键数字参数与时间点，紧接着就给出一句影响或对读者的意义，"
+        "剩下的篇幅再补充可对比的数据、官方说法与各方回应（越靠后越可以被舍弃）。"
         "不要复述标题、不要分点、不要堆形容词；"
         f"来源给的材料撑不到 {low} 字就据实写短，写到 150 字左右即可，"
         "严禁用「材料未提及」「需进一步核实」「应关注官方口径」这类话凑篇幅"
     )
+
+
+def clamp_brief(text: str, low: int, high: int) -> str:
+    """Keep the write-up inside the band the reader agreed on, cutting between sentences."""
+    text = (text or "").strip()
+    if len(text) <= high:
+        return text
+    kept = ""
+    for sentence in [part for part in SENTENCE_END.split(text) if part.strip()]:
+        if len(sentence) > high:
+            break
+        if kept and len(kept) + len(sentence) > high:
+            break
+        kept += sentence
+    if len(kept) < max(80, low // 2):
+        head = text[:high]
+        edge = max(head.rfind(chr(12290)), head.rfind(chr(65307)))
+        kept = head[: edge + 1] if edge > 60 else head
+    return kept.strip()
 
 
 def _batches(items: list[Article], size: int) -> list[list[Article]]:
@@ -232,7 +254,7 @@ def curate_section(
         if final_score < MIN_SCORE:
             continue
         if llm_cfg.task_on("summarize") and str(decision.get("summary") or "").strip():
-            article.summary = str(decision["summary"]).strip()
+            article.summary = clamp_brief(str(decision["summary"]).strip(), llm_cfg.summary_min, llm_cfg.summary_max)
         else:
             article.summary = plain_summary(article)
         article.why = str(decision.get("why") or "").strip() or (
