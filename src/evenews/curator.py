@@ -73,14 +73,16 @@ SUMMARY_CHARS = (300, 400)
 
 def summary_rule(llm: BaseLLM, count: int) -> str:
     """How long one write-up may run, given what the model can hand back in a single call."""
-    low, high = SUMMARY_CHARS
+    low = int(getattr(llm.cfg, "summary_min", SUMMARY_CHARS[0]) or SUMMARY_CHARS[0])
+    high = max(low, int(getattr(llm.cfg, "summary_max", SUMMARY_CHARS[1]) or SUMMARY_CHARS[1]))
     budget = int(getattr(llm.cfg, "max_output_tokens", 0) or 0)
     if budget > 0 and count > 0:
         room = int(budget * 1.4 / count) - 60  # 汉字约 1.4 字/token，再扣掉分数与关键词等字段
-        high = max(120, min(high, room))
-        low = min(low, max(120, high - 80))
+        if room < high:                     # only bite when the model genuinely cannot write that much
+            high = max(120, room)
+            low = min(low, max(120, high - 80))
     return (
-        f"{low}-{high} 个汉字（写满 {low} 字、别超过 {high} 字），一段连贯中文："
+        f"{low}-{high} 个汉字，这是硬指标：不少于 {low} 字，最多 {high} 字，写超了算不合格。一段连贯中文："
         "先用一句话交代背景（这件事此前是什么状态），"
         "再说清今天到底发生了什么、主体是谁、关键数字参数与时间点，"
         "有官方说法、各方回应或可对比的数据就一并写上，"

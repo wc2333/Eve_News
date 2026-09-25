@@ -237,6 +237,9 @@ def test_the_write_up_budget_follows_the_token_cap():
     roomy = summary_rule(MockLLM(LLMConfig(max_output_tokens=8000, batch_size=8)), 8)
     assert roomy.startswith("300-400 个汉字"), "the default budget is the full write-up"
 
+    tuned = summary_rule(MockLLM(LLMConfig(summary_min=200, summary_max=260, max_output_tokens=32000)), 4)
+    assert tuned.startswith("200-260 个汉字"), "the length dial is honoured"
+
     shrunk = summary_rule(MockLLM(LLMConfig(max_output_tokens=1500, batch_size=8)), 8)
     low, high = [int(part) for part in shrunk.split("个汉字")[0].split("-")]
     assert 120 <= low < high < 300, shrunk

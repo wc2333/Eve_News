@@ -216,6 +216,8 @@ class LLMConfig:
     json_mode: bool = True
     max_output_tokens: int = 32000
     batch_size: int = 8
+    summary_min: int = 300          # 每条介绍的目标字数区间
+    summary_max: int = 400
     proxy: str = ""
     tasks: dict = field(default_factory=dict)
     search: dict = field(default_factory=dict)
@@ -236,6 +238,8 @@ class LLMConfig:
             json_mode=bool(raw.get("json_mode", True)),
             max_output_tokens=int(raw.get("max_output_tokens") or 32000),
             batch_size=int(raw.get("batch_size") or 8),
+            summary_min=max(80, int(raw.get("summary_min") or 300)),
+            summary_max=max(120, int(raw.get("summary_max") or 400)),
             tasks=dict(raw.get("tasks") or {}),
             search=dict(raw.get("search") or {}),
             headers=dict(raw.get("headers") or {}),

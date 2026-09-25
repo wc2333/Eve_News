@@ -65,6 +65,8 @@ llm:
   #   enable_thinking: false
   max_output_tokens: 32000    # 单次输出上限。上下文大不代表能写很多：推理型模型的思考也算在这里
   batch_size: 4           # 一次给模型多少条候选；条数越多每条可写的字数越少，也越容易被掐断
+  summary_min: 300        # 每条介绍的目标字数：写满 300 字
+  summary_max: 400        # 但不要超过 400 字（材料实在太少时允许写短）
   tasks:                    # 哪些环节交给模型做；关掉则退化为规则处理
     select: true            # 筛选、排序、去重
     classify: true          # 判断条目属于哪个板块
