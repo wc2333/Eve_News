@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eve-news"
+version = "0.1.0"
+description = "AI 每日资讯：跨平台新闻聚合、模型筛选、定时邮件推送"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0",
+  "feedparser>=6.0.11",
+  "Jinja2>=3.1",
+  "tzdata>=2024.1; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+evenews = "evenews.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+evenews = ["templates/*", "data/*", "sample/feeds/*"]

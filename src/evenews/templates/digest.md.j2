@@ -1,0 +1,37 @@
+# {{ brand.title }} · {{ date_cn }}
+
+> {{ brand.kicker }} ｜ {{ brand.classification }} ｜ {{ digest.generated_at }}
+
+{% if digest.lead %}
+## 今日摘要
+
+{{ digest.lead }}
+{% endif %}
+
+{% for group in groups %}
+## 第 {{ group.index }} 版 {{ group.section.title }}
+{% if group.section.description %}
+_{{ group.section.description }}_
+{% endif %}
+
+{% if not group.entries %}
+今日该板块没有筛选出符合条件的内容。
+{% endif %}
+{% for item in group.entries %}
+### {{ item.number }} {{ item.title }}
+
+- 来源：{{ item.source }}{% if item.published %} · {{ item.published }}{% endif %}{% if item.score_label %} · 相关度 {{ item.score_label }}{% endif %}
+
+{{ item.summary }}
+{% if item.why %}
+编辑点评：{{ item.why }}
+{% endif %}
+链接：<{{ item.url }}>
+
+{% endfor %}
+{% endfor %}
+---
+
+**本次引用来源**：{% for source in sources %}{{ source.name }}（{{ source.domain }}）{% if not loop.last %}、{% endif %}{% endfor %}
+
+{{ brand.title }} · {{ brand.footer_note }}

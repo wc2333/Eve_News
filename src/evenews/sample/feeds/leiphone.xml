@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>雷峰网</title>
+    <link>https://www.leiphone.com/</link>
+    <description>雷峰网 样例订阅源（离线演示用）</description>
+    <item>
+      <title>人形机器人量产提速：单厂月产 1200 台，成本降 26%</title>
+      <link>https://www.leiphone.com/category/robot/9f2a.html</link>
+      <guid isPermaLink="true">https://www.leiphone.com/category/robot/9f2a.html</guid>
+      <pubDate>Fri, 25 Sep 2026 08:55:00 +0800</pubDate>
+      <description>头部人形机器人厂商透露月产能已达 1200 台，单机成本较年初下降 26%，主要来自行星滚珠丝杠与灵巧手国产化。</description>
+    </item>
+    <item>
+      <title>智驾芯片进入 5nm 竞争：单颗 2000 TOPS 算力报价下探</title>
+      <link>https://www.leiphone.com/category/ai/7c11.html</link>
+      <guid isPermaLink="true">https://www.leiphone.com/category/ai/7c11.html</guid>
+      <pubDate>Thu, 24 Sep 2026 17:25:00 +0800</pubDate>
+      <description>两家智驾芯片厂商同步发布 5nm 新品，单颗算力 2000 TOPS，报价同比下探约 18%，2027 年上半年量产上车。</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>量子位</title>
+    <link>https://www.qbitai.com/</link>
+    <description>量子位 样例订阅源（离线演示用）</description>
+    <item>
+      <title>Kimi 发布 K2.5：Agent 跑完 120 步长任务不掉链子</title>
+      <link>https://www.qbitai.com/2026/09/100201.html</link>
+      <guid isPermaLink="true">https://www.qbitai.com/2026/09/100201.html</guid>
+      <pubDate>Fri, 25 Sep 2026 09:00:00 +0800</pubDate>
+      <description>月之暗面开源 Kimi K2.5，官方称在 120 步以上的长链路智能体任务成功率 78%，比上一代高 19 个百分点，支持 256K 上下文。</description>
+    </item>
+    <item>
+      <title>国产多模态模型集体刷榜：OCR 与图表理解进入 95 分区间</title>
+      <link>https://www.qbitai.com/2026/09/100188.html</link>
+      <guid isPermaLink="true">https://www.qbitai.com/2026/09/100188.html</guid>
+      <pubDate>Fri, 25 Sep 2026 07:40:00 +0800</pubDate>
+      <description>最新 OpenCompass 榜单显示，Qwen、GLM、DeepSeek 三家多模态模型在 OCR 与图表理解上均超过 95 分，与闭源旗舰差距缩小到 2 分以内。</description>
+    </item>
+  </channel>
+</rss>

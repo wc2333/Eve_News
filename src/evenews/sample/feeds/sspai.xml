@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>少数派</title>
+    <link>https://sspai.com/</link>
+    <description>少数派 样例订阅源（离线演示用）</description>
+    <item>
+      <title>智能手表的本地模型试验：离线语音转写准确率 96%</title>
+      <link>https://sspai.com/post/101001</link>
+      <guid isPermaLink="true">https://sspai.com/post/101001</guid>
+      <pubDate>Fri, 25 Sep 2026 10:20:00 +0800</pubDate>
+      <description>有开发者在旗舰智能手表上部署 1.2B 语音模型，离线转写中文准确率 96%，续航影响约 8%，代码已开源。</description>
+    </item>
+  </channel>
+</rss>

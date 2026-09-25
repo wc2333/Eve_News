@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>爱范儿</title>
+    <link>https://www.ifanr.com/</link>
+    <description>爱范儿 样例订阅源（离线演示用）</description>
+    <item>
+      <title>AI 眼镜开始拼重量：新品做到 38g，续航 6 小时</title>
+      <link>https://www.ifanr.com/1680001</link>
+      <guid isPermaLink="true">https://www.ifanr.com/1680001</guid>
+      <pubDate>Fri, 25 Sep 2026 10:05:00 +0800</pubDate>
+      <description>新款 AI 眼镜整机 38g，双摄加麦克风阵列，连续语音对话续航 6 小时，售价 1899 元，首发 3 周出货约 5 万台。</description>
+    </item>
+    <item>
+      <title>具身智能数据公司融资 12 亿：一年卖出 40 万条操作轨迹</title>
+      <link>https://www.ifanr.com/1680010</link>
+      <guid isPermaLink="true">https://www.ifanr.com/1680010</guid>
+      <pubDate>Fri, 25 Sep 2026 09:35:00 +0800</pubDate>
+      <description>一家具身智能数据公司完成 12 亿元 B 轮融资，累计交付 40 万条真机操作轨迹，客户覆盖 14 家机器人本体与 3 家车企。</description>
+    </item>
+  </channel>
+</rss>

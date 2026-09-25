@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>OpenAI News</title>
+    <link>https://openai.com/news/</link>
+    <description>OpenAI News 样例订阅源（离线演示用）</description>
+    <item>
+      <title>Batch API price cut and 12-hour SLA for enterprise</title>
+      <link>https://openai.com/news/batch-api-price-cut</link>
+      <guid isPermaLink="true">https://openai.com/news/batch-api-price-cut</guid>
+      <pubDate>Fri, 25 Sep 2026 01:30:00 +0000</pubDate>
+      <description>OpenAI cut Batch API pricing by 30% and added a 12-hour service level for enterprise customers, aiming at large offline evaluation and distillation jobs.</description>
+    </item>
+  </channel>
+</rss>

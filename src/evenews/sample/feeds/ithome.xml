@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>IT之家</title>
+    <link>https://www.ithome.com/</link>
+    <description>IT之家 样例订阅源（离线演示用）</description>
+    <item>
+      <title>高通峰会：骁龙 8 Gen 6 端侧跑 7B 模型，每秒 32 token</title>
+      <link>https://www.ithome.com/0/889001.htm</link>
+      <guid isPermaLink="true">https://www.ithome.com/0/889001.htm</guid>
+      <pubDate>Thu, 24 Sep 2026 20:15:00 +0800</pubDate>
+      <description>9 月 24 日高通骁龙峰会公布 8 Gen 6，NPU 算力 78 TOPS，端侧运行 7B 模型可达 32 token/秒，整机功耗增加不足 1.2W。</description>
+    </item>
+    <item>
+      <title>第二批手机端侧生成式 AI 备案公布，共 11 款产品过审</title>
+      <link>https://www.ithome.com/0/889014.htm</link>
+      <guid isPermaLink="true">https://www.ithome.com/0/889014.htm</guid>
+      <pubDate>Fri, 25 Sep 2026 09:15:00 +0800</pubDate>
+      <description>网信部门公布第二批手机端侧生成式 AI 服务备案，共 11 款产品通过，覆盖 6 家手机厂商，备案机型自 10 月起陆续推送端侧模型。</description>
+    </item>
+    <item>
+      <title>小米公布 AI PC 计划：本地 13B 模型 + 32GB 起步</title>
+      <link>https://www.ithome.com/0/889022.htm</link>
+      <guid isPermaLink="true">https://www.ithome.com/0/889022.htm</guid>
+      <pubDate>Fri, 25 Sep 2026 08:45:00 +0800</pubDate>
+      <description>小米公布 AI PC 路线，首批机型标配 32GB 内存，本地部署 13B 量化模型，官方称离线文档总结响应时间低于 2 秒。</description>
+    </item>
+  </channel>
+</rss>

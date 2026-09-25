@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Hugging Face Blog</title>
+    <link>https://huggingface.co/blog/</link>
+    <description>Hugging Face Blog 样例订阅源（离线演示用）</description>
+    <item>
+      <title>Open weights week: 12 new models released under Apache 2.0</title>
+      <link>https://huggingface.co/blog/open-weights-week</link>
+      <guid isPermaLink="true">https://huggingface.co/blog/open-weights-week</guid>
+      <pubDate>Fri, 25 Sep 2026 02:00:00 +0000</pubDate>
+      <description>This week the hub added 12 new open-weight models, most under Apache 2.0, including a 7B multimodal model and three distilled speech models with sub-200ms latency.</description>
+    </item>
+    <item>
+      <title>Leaderboard update: agentic tool-use splits from chat quality</title>
+      <link>https://huggingface.co/blog/leaderboard-tool-use</link>
+      <guid isPermaLink="true">https://huggingface.co/blog/leaderboard-tool-use</guid>
+      <pubDate>Thu, 24 Sep 2026 21:15:00 +0000</pubDate>
+      <description>The tool-use leaderboard now reports multi-step reliability separately: only 4 of 38 models finish a 50-step task with more than 70% success.</description>
+    </item>
+  </channel>
+</rss>

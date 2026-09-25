@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>36氪</title>
+    <link>https://36kr.com/</link>
+    <description>36氪 样例订阅源（离线演示用）</description>
+    <item>
+      <title>AI 算力租赁价格三个月跌 18%：中小客户开始转按量计费</title>
+      <link>https://36kr.com/p/3450001</link>
+      <guid isPermaLink="true">https://36kr.com/p/3450001</guid>
+      <pubDate>Fri, 25 Sep 2026 09:25:00 +0800</pubDate>
+      <description>多地智算中心报价下滑，8 卡 A 级机型月租三个月内下降 18%，头部厂商把 60% 的算力改为按量计费以拉高上架率。</description>
+    </item>
+    <item>
+      <title>大模型应用公司通过港股上市聆讯：年营收 9.7 亿</title>
+      <link>https://36kr.com/p/3450018</link>
+      <guid isPermaLink="true">https://36kr.com/p/3450018</guid>
+      <pubDate>Fri, 25 Sep 2026 08:05:00 +0800</pubDate>
+      <description>一家大模型应用公司通过港交所上市聆讯，2025 年营收 9.7 亿元、毛利率 54%，其中 71% 来自企业订阅与私有化部署。</description>
+    </item>
+  </channel>
+</rss>

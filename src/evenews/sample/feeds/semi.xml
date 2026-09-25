@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>半导体行业观察</title>
+    <link>http://www.semi.org.cn/</link>
+    <description>半导体行业观察 样例订阅源（离线演示用）</description>
+    <item>
+      <title>昇腾 910C 超节点实测：7 万亿参数模型可单机训练</title>
+      <link>http://www.semi.org.cn/a/770001.html</link>
+      <guid isPermaLink="true">http://www.semi.org.cn/a/770001.html</guid>
+      <pubDate>Fri, 25 Sep 2026 08:20:00 +0800</pubDate>
+      <description>第三方实测报告显示昇腾 910C 超节点在 7 万亿参数 MoE 模型上可单机完成预训练，等效算力利用率 58%，功耗较上一代降 12%。</description>
+    </item>
+    <item>
+      <title>HBM 扩产竞赛：三家存储厂明年产能翻倍</title>
+      <link>http://www.semi.org.cn/a/770009.html</link>
+      <guid isPermaLink="true">http://www.semi.org.cn/a/770009.html</guid>
+      <pubDate>Fri, 25 Sep 2026 07:50:00 +0800</pubDate>
+      <description>存储大厂把 HBM3E 产能目标提高一倍，国内两家封测厂同步扩 CoWoS 类产线，预计 2027 年供给缺口收窄到 8% 以内。</description>
+    </item>
+    <item>
+      <title>国产 GPU 集群调度平台上线：万卡集群利用率提到 72%</title>
+      <link>http://www.semi.org.cn/a/770015.html</link>
+      <guid isPermaLink="true">http://www.semi.org.cn/a/770015.html</guid>
+      <pubDate>Thu, 24 Sep 2026 19:10:00 +0800</pubDate>
+      <description>某智算中心发布自研调度平台，万卡异构集群平均利用率从 54% 提升到 72%，故障卡自动隔离时间缩短到 90 秒。</description>
+    </item>
+  </channel>
+</rss>

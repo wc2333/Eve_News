@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>InfoQ 中文</title>
+    <link>https://www.infoq.cn/</link>
+    <description>InfoQ 中文 样例订阅源（离线演示用）</description>
+    <item>
+      <title>企业级 RAG 平台集中上新：向量库与知识图谱开始合体</title>
+      <link>https://www.infoq.cn/article/AMPLE001</link>
+      <guid isPermaLink="true">https://www.infoq.cn/article/AMPLE001</guid>
+      <pubDate>Fri, 25 Sep 2026 06:30:00 +0800</pubDate>
+      <description>近两周内 5 家厂商发布企业 RAG 新品，共同点是把向量检索与知识图谱融合，官方宣称问答准确率提升 15%-25%，落地成本增加约 10%。</description>
+    </item>
+  </channel>
+</rss>

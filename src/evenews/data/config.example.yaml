@@ -1,0 +1,167 @@
+# Eve_News · AI 每日资讯 配置文件
+# 复制成 config.yaml 后按需修改：evenews init 会自动完成这一步
+# 密码/API Key 建议放环境变量或同目录 .env 文件，不要写进本文件
+
+log_level: INFO
+out_dir: out
+state_dir: state
+
+brand:
+  company: 公司名
+  logo_text: AI
+  kicker: DAILY AI BRIEFING
+  title: AI 每日资讯
+  classification: 内部参考
+  footer_note: 自动生成 · 仅供内部参考，转载请注明出处
+  background: "#f5f3ee"
+  accent: "#b5322d"
+  label: "#2f5c9b"
+  text: "#1f2328"
+
+# 每日发送时间（本机时区见 timezone）；evenews daemon 或系统计划任务都读这里
+schedule:
+  time: "08:00"
+  timezone: Asia/Shanghai
+  weekday_only: false
+
+# 邮件（SMTP）：QQ/163/企业邮箱/Google Workspace 均可
+email:
+  enabled: true
+  smtp_host: smtp.example.com
+  smtp_port: 465
+  security: ssl            # ssl | starttls | none
+  username: bot@example.com
+  password_env: EVE_NEWS_SMTP_PASSWORD   # 读取该环境变量作为密码
+  from: "AI 每日资讯 <bot@example.com>"
+  to:
+    - team@example.com
+  cc: []
+  subject_template: "{title} · {date}"
+  subject_prefix: ""
+  attach_html: false
+  timeout: 30
+  retries: 2
+
+# 信息搜集与写作所用的模型：改 provider/base_url/model 即可换供应商
+# provider: mock(离线演示) | openai | anthropic | ollama | deepseek | moonshot | dashscope | siliconflow
+llm:
+  provider: mock
+  base_url: https://api.openai.com/v1
+  model: gpt-5.4-mini
+  api_key_env: EVE_NEWS_LLM_API_KEY
+  temperature: 0.2
+  timeout: 180
+  retries: 2
+  json_mode: true
+  max_output_tokens: 4000
+  batch_size: 18
+  tasks:                    # 哪些环节交给模型做；关掉则退化为规则处理
+    select: true            # 筛选、排序、去重
+    classify: true          # 判断条目属于哪个板块
+    summarize: true         # 生成 80-140 字中文摘要
+    lead: true              # 写今日摘要导语
+  # 可选：让模型自己联网检索补充信息（留空则只用下面的固定来源）
+  search:
+    provider: none          # none | tavily | serper
+    api_key_env: EVE_NEWS_SEARCH_API_KEY
+    queries_per_section: 2
+
+collection:
+  mode: feeds               # feeds(只用来源池) | llm(优先模型检索) | hybrid(两者都跑)
+  lookback_hours: 30        # 只看最近这么多小时内的条目
+  per_source_limit: 30      # 每个来源最多取多少条
+  dedupe_days: 10           # 多少天内不重复推送同一篇
+  timeout: 25
+  headers:
+    Accept-Language: zh-CN,zh;q=0.9,en;q=0.6
+  require_keywords: [AI, ai, 人工智能, 大模型, 大语言模型, LLM, GPT, Agent, 智能体, 算力, 芯片, 机器人, AIGC, 机器学习, 深度学习, 神经网络, 训练, 推理, 多模态, GPU, HBM, 英伟达, OpenAI, Anthropic, DeepSeek, Qwen, Claude, Gemini, Llama]
+  exclude_keywords: [招聘, 征文, 抽奖, 广告, 促销, 课程优惠, 直播预约]
+
+# 来源池：板块里按名字引用即可，避免重复配置
+sources:
+  ithome:
+    url: https://www.ithome.com/rss/
+  qbitai:
+    url: https://www.qbitai.com/feed
+  jiqizhixin:
+    url: https://www.jiqizhixin.com/rss
+  leiphone:
+    url: https://www.leiphone.com/feed
+  ifanr:
+    url: https://www.ifanr.com/feed
+  36kr:
+    url: https://36kr.com/feed
+  huxiu:
+    url: https://www.huxiu.com/rss/0.xml
+  sspai:
+    url: https://sspai.com/feed
+  infoq:
+    url: https://www.infoq.cn/feed
+  semi:
+    url: http://www.semi.org.cn/feed
+  huggingface:
+    url: https://huggingface.co/blog/feed.xml
+  openai:
+    url: https://openai.com/news/rss.xml
+  google_ai:
+    url: https://blog.google/technology/ai/rss/
+  arxiv_cl:
+    url: https://rss.arxiv.org/rss/cs.CL
+  arxiv_lg:
+    url: https://rss.arxiv.org/rss/cs.LG
+
+# 6 个板块，enabled: false 即不采集也不推送；也可用 evenews enable/disable 切换
+sections:
+  - id: llm_oss
+    title: 大模型与开源生态
+    description: 模型发布、评测榜单、开源权重、API 价格与开发者生态
+    enabled: true
+    max_items: 6
+    sources: [jiqizhixin, qbitai, huggingface, openai, arxiv_cl, infoq]
+    extra_prompt: 优先模型发布、能力评测、开源权重与价格变化；给出关键数字（参数量、价格、榜单名次）。
+    keywords: [大模型, 开源, 权重, 发布, 模型, LLM, GPT, Qwen, 通义, DeepSeek, Kimi, GLM, 文心, 豆包, 混元, Claude, Gemini, Llama, Mistral, HuggingFace, 微调, 蒸馏, 多模态, MoE, 上下文, 推理模型]
+
+  - id: edge_ai
+    title: 端侧 AI 与芯片峰会
+    description: 手机/PC 端侧模型、峰会发布、算法备案与合规
+    enabled: true
+    max_items: 5
+    sources: [ithome, ifanr, qbitai, leiphone]
+    extra_prompt: 关注端侧/终端 AI 能力、峰会发布、国内备案与合规进展。
+    keywords: [端侧, 终端, 手机, 高通, 骁龙, 联发科, 天玑, 苹果, iOS, 鸿蒙, 小米, OPPO, vivo, 备案, NPU, 边缘, 小模型, 量化, 离线, 端云]
+
+  - id: domestic_compute
+    title: 国产算力与集群
+    description: 国产 GPU/NPU、智算中心、超节点集群与供应链
+    enabled: true
+    max_items: 5
+    sources: [semi, 36kr, qbitai, ithome, arxiv_lg]
+    extra_prompt: 关注国产芯片性能数据、智算中心建设、集群规模与供应链变化。
+    keywords: [国产算力, 华为, 昇腾, 寒武纪, 海光, 壁仞, 摩尔线程, 燧原, 沐曦, 天数智芯, 超节点, 智算中心, 算力, 集群, 液冷, 光模块, HBM, CoWoS, 先进制程, 服务器]
+
+  - id: devices_robotics
+    title: 端侧设备与具身智能
+    description: 机器人、自动驾驶、AI 硬件与具身智能进展
+    enabled: true
+    max_items: 5
+    sources: [ithome, ifanr, leiphone, 36kr]
+    extra_prompt: 关注人形机器人/机器狗、自动驾驶、AI 硬件的量产与落地数据。
+    keywords: [具身智能, 机器人, 人形机器人, 机器狗, 机械臂, 自动驾驶, 智驾, 座舱, 无人机, 智能硬件, AI PC, 眼镜, 耳机, 传感器, 灵巧手, 大模型机器人]
+
+  - id: wearables
+    title: 智能眼镜与可穿戴
+    description: AI 眼镜、头显、手表耳机等可穿戴新形态
+    enabled: true
+    max_items: 4
+    sources: [ifanr, ithome, sspai, huxiu]
+    extra_prompt: 关注 AI 眼镜/头显/手表的销量、供应链与新交互形态。
+    keywords: [智能眼镜, AI 眼镜, 眼镜, AR, MR, VR, 头显, 手表, 手环, 耳机, 戒指, 吊坠, 可穿戴, Ray-Ban, Meta, 摄像头, 麦克风]
+
+  - id: industry_capital
+    title: 行业商业 · 资本与算力
+    description: 融资并购、财报产能、政策监管与算力经济学
+    enabled: true
+    max_items: 5
+    sources: [36kr, huxiu, qbitai, infoq]
+    extra_prompt: 关注融资估值、商业化收入、Token/算力成本与政策监管。
+    keywords: [融资, 估值, IPO, 上市, 投资, 并购, 财报, 营收, 毛利, 涨价, 降价, 产能, 出货量, 政策, 监管, 备案, Token 工厂, 商业化, 市场规模]

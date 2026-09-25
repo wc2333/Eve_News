@@ -1,0 +1,19 @@
+# local tooling
+.tmp_img/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+
+# secrets & generated output
+.env
+config.yaml
+out/
+state/
+logs/
+run_daily.cmd
+demo/

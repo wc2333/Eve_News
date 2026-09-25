@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>虎嗅</title>
+    <link>https://www.huxiu.com/</link>
+    <description>虎嗅 样例订阅源（离线演示用）</description>
+    <item>
+      <title>Token 工厂经济学：单卡日均产值首次跌破 40 元</title>
+      <link>https://www.huxiu.com/article/880001.html</link>
+      <guid isPermaLink="true">https://www.huxiu.com/article/880001.html</guid>
+      <pubDate>Fri, 25 Sep 2026 09:50:00 +0800</pubDate>
+      <description>多家推理服务商披露运营数据，单张推理卡日均 Token 产值跌破 40 元，同比降 34%，厂商开始用错峰与批处理拉平成本。</description>
+    </item>
+    <item>
+      <title>AI 制药进入闭环竞争：数据-模型-实验-再数据</title>
+      <link>https://www.huxiu.com/article/880012.html</link>
+      <guid isPermaLink="true">https://www.huxiu.com/article/880012.html</guid>
+      <pubDate>Thu, 24 Sep 2026 21:40:00 +0800</pubDate>
+      <description>多家科技巨头加码 AI 制药，竞争焦点从模型转向行业基础设施，能跑通数据到实验闭环的公司把研发周期压缩到 14 个月。</description>
+    </item>
+  </channel>
+</rss>

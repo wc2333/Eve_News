@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>arXiv cs.CL</title>
+    <link>https://arxiv.org/list/cs.CL/recent</link>
+    <description>arXiv cs.CL 样例订阅源（离线演示用）</description>
+    <item>
+      <title>Sparse routing keeps accuracy at 40% of the compute</title>
+      <link>https://arxiv.org/abs/2609.11201</link>
+      <guid isPermaLink="true">https://arxiv.org/abs/2609.11201</guid>
+      <pubDate>Fri, 25 Sep 2026 00:05:00 +0000</pubDate>
+      <description>The paper reports a router that activates 40% of expert capacity during decoding while retaining 98.6% of dense-model accuracy on six reasoning benchmarks.</description>
+    </item>
+    <item>
+      <title>Long-context retrieval still fails at 200K on real documents</title>
+      <link>https://arxiv.org/abs/2609.11244</link>
+      <guid isPermaLink="true">https://arxiv.org/abs/2609.11244</guid>
+      <pubDate>Thu, 24 Sep 2026 23:50:00 +0000</pubDate>
+      <description>Evaluations on real 200K-token documents show retrieval-augmented pipelines losing 22 points versus synthetic needles, with mid-context positions the weakest.</description>
+    </item>
+  </channel>
+</rss>
