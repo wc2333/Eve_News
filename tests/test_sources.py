@@ -74,3 +74,56 @@ def test_proxy_knob_selects_the_right_opener():
         "https": "http://127.0.0.1:7890",
     }
     assert proxies_of(opener_for("")) == proxies_of(urllib.request.build_opener()), "empty keeps urllib defaults"
+
+
+class _StubResponse:
+    def __init__(self, body: bytes) -> None:
+        self.body = body
+
+    def read(self) -> bytes:
+        return self.body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class _StubOpener:
+    def __init__(self, broken: bool) -> None:
+        self.broken = broken
+
+    def open(self, request, timeout=None):
+        if self.broken:
+            raise OSError("[WinError 10061] connection refused")
+        return _StubResponse(b"<rss><channel></channel></rss>")
+
+
+def test_auto_mode_falls_back_to_a_direct_connection(monkeypatch):
+    from evenews import net
+
+    seen: list = []
+
+    def fake_opener_for(mode):
+        seen.append(mode)
+        return _StubOpener(broken=mode is None)
+
+    monkeypatch.setattr(net, "opener_for", fake_opener_for)
+    assert net.fetch_bytes("https://example.com/feed", retries=0)
+    assert seen == [None, "none"], "system proxy first, then a direct retry"
+
+
+def test_pinned_proxy_does_not_silently_go_direct(monkeypatch):
+    from evenews import net
+
+    seen: list = []
+
+    def fake_opener_for(mode):
+        seen.append(mode)
+        return _StubOpener(broken=True)
+
+    monkeypatch.setattr(net, "opener_for", fake_opener_for)
+    with pytest.raises(HttpError):
+        net.fetch_bytes("https://example.com/feed", retries=0, proxy="http://127.0.0.1:7890")
+    assert seen == ["http://127.0.0.1:7890"]

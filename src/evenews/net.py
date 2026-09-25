@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import urllib.error
 import urllib.request
@@ -16,6 +17,9 @@ DEFAULT_HEADERS = {
     ),
     "Accept": "application/json, application/rss+xml, application/xml, text/xml, text/html, */*",
 }
+
+
+log = logging.getLogger("evenews.net")
 
 
 class HttpError(Exception):
@@ -72,17 +76,23 @@ def fetch_bytes(
         request_headers.setdefault("Content-Type", "application/json")
     verb = method or ("POST" if body is not None else "GET")
 
-    opener = opener_for(proxy)
+    modes = [proxy] if proxy is not None else [None, "none"]
     last_error: Exception | None = None
-    for attempt in range(max(1, retries + 1)):
-        try:
-            request = urllib.request.Request(url, data=body, headers=request_headers, method=verb)
-            with opener.open(request, timeout=timeout) as response:
-                return response.read()
-        except Exception as exc:  # noqa: BLE001 - normalised for every caller
-            last_error = exc
-            if attempt < retries:
-                time.sleep(1.5 * (attempt + 1))
+    for index, mode in enumerate(modes):
+        opener = opener_for(mode)
+        mode_retries = retries if index == 0 else 0
+        mode_timeout = timeout if index == 0 else min(timeout, 12)
+        for attempt in range(max(1, mode_retries + 1)):
+            try:
+                request = urllib.request.Request(url, data=body, headers=request_headers, method=verb)
+                with opener.open(request, timeout=mode_timeout) as response:
+                    return response.read()
+            except Exception as exc:  # noqa: BLE001 - normalised for every caller
+                last_error = exc
+                if attempt < mode_retries:
+                    time.sleep(1.5 * (attempt + 1))
+                elif index < len(modes) - 1 and isinstance(exc, OSError) and not isinstance(exc, urllib.error.HTTPError):
+                    log.warning("%s 走代理取不到，改用直连再试一次：%s", url, exc)
     detail = getattr(last_error, "reason", None) or last_error
     if proxy is None and isinstance(last_error, OSError) and not isinstance(last_error, urllib.error.HTTPError):
         detail = f"{detail}{PROXY_HINT}"
