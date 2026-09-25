@@ -55,3 +55,11 @@ def test_default_template_mentions_every_knob():
     text = default_config_text()
     for needle in ("schedule:", "email:", "llm:", "collection:", "sections:", "sources:"):
         assert needle in text
+
+
+def test_shipped_defaults_carry_the_company_identity(tmp_path):
+    config = Config.from_dict({}, tmp_path / "config.yaml")
+    assert config.brand.company == "凯铮寰宇"
+    assert config.brand.logo_file == "brand-logo-kzhy.jpg"
+    assert "kzhytech.com" in config.brand.site
+    assert config.brand.accent == "#007492"

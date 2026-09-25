@@ -15,6 +15,9 @@ def raw_config() -> dict:
         log_level: WARNING
         brand:
           company: 测试公司
+          kicker: DAILY AI BRIEFING
+          logo_file: ""
+          site: ""
           title: AI 每日资讯
         schedule:
           time: "07:30"

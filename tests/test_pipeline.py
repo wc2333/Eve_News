@@ -243,3 +243,17 @@ def test_the_footer_names_the_reason_a_source_failed():
     digest.stats = {"sources": 15, "failed_sources": ["modelscope"], "fetch_errors": ["modelscope: GET https://modelscope.cn/api failed: 403 Forbidden"]}
     page = render_html(digest, BRAND)
     assert "403 Forbidden" in page, "an operator must see why a source went missing"
+
+
+def test_the_company_mark_is_embedded_in_the_brief():
+    with_logo = Brand(company="凯铮寰宇", logo_text="CTONE", logo_file="brand-logo-ctone.png", site="https://www.kzhytech.com")
+    page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), with_logo)
+    assert "data:image/png;base64," in page, "an email must not depend on external image hosts"
+    assert "kzhytech.com" in page and "凯铮寰宇" in page
+
+
+def test_a_missing_logo_file_degrades_to_text():
+    broken = Brand(company="凯铮寰宇", logo_text="CTONE", logo_file="does-not-exist.png")
+    page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), broken)
+    assert "data:image" not in page
+    assert "CTONE" in page and "凯铮寰宇" in page

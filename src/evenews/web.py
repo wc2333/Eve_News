@@ -175,6 +175,12 @@ def read_text_tail(path: Path, limit: int = 6000) -> str:
         return ""
     return path.read_text(encoding="utf-8", errors="replace")[-limit:]
 
+class SettingsServer(ThreadingHTTPServer):
+    """Never share the port: on Windows SO_REUSEADDR lets a stale copy keep the connections."""
+
+    allow_reuse_address = False
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     """Small JSON API behind the settings page; localhost-only by default."""
 
@@ -253,6 +259,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self._send(200, page.read_bytes(), "text/html; charset=utf-8")
             if path == "/api/state":
                 return self._json(self._snapshot())
+            if path == "/api/brand-logo":
+                from .render import resolve_logo
+
+                raw, mime = resolve_logo(self._config().brand)
+                if not raw:
+                    raise WebError("没有配置 brand.logo_file")
+                return self._send(200, raw, mime)
             if path == "/api/preview":
                 config = self._config()
                 date = (query.get("date") or [""])[0] or latest_output(config).get("date", "")
@@ -381,8 +394,17 @@ class RequestHandler(BaseHTTPRequestHandler):
 def serve(config_path: Path, host: str = "127.0.0.1", port: int = DEFAULT_PORT, open_browser: bool = True) -> int:
     RequestHandler.config_path = Path(config_path).resolve()
     load_dotenv(RequestHandler.config_path.parent)
-    server = ThreadingHTTPServer((host, int(port)), RequestHandler)
     url = f"http://{host}:{port}"
+    try:
+        server = SettingsServer((host, int(port)), RequestHandler)
+    except OSError as exc:
+        message = (
+            f"端口 {port} 上已经有一个设置页在跑（{exc}），它读的是旧代码。"
+            f"关掉那个窗口再开，或换端口：evenews web --port {int(port) + 3}"
+        )
+        print(message)
+        log.error(message)
+        return 2
     print(f"设置页面：{url}   配置文件：{RequestHandler.config_path}")
     log.info("设置页面已启动：%s （Ctrl+C 停止）", url)
     if open_browser:

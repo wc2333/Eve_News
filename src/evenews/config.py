@@ -113,6 +113,8 @@ def _source_pool(raw: Any) -> dict[str, dict]:
 class Brand:
     company: str = ""
     logo_text: str = ""
+    logo_file: str = ""
+    site: str = ""
     kicker: str = "DAILY AI BRIEFING"
     title: str = "AI 每日资讯"
     classification: str = "内部参考"

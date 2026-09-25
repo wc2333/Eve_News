@@ -5,6 +5,7 @@ from __future__ import annotations
 import http.client
 import json
 import os
+import socket
 import threading
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -192,3 +193,37 @@ def test_latest_output_prefers_real_dates(site):
     assert status == 200 and state["latest"]["date"] == "2026-09-20"
     status, page = client.call("GET", "/api/preview")
     assert status == 200 and page == "<html></html>"
+
+
+def test_the_settings_page_serves_the_brand_logo(site, tmp_path):
+    client, config_path, _ = site
+    status, body = client.call("GET", "/api/brand-logo")
+    assert status == 400 and "logo_file" in body["error"], "no logo configured must read as a clear answer"
+
+    mark = tmp_path / "mark.svg"
+    mark.write_text('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>', encoding="utf-8")
+    status, body = client.call("PUT", "/api/settings", {"settings": {"brand": {"company": "凯铮寰宇", "logo_file": str(mark)}}})
+    assert status == 200 and body["ok"] is True
+
+    status, body = client.call("GET", "/api/brand-logo")
+    assert status == 200 and "<svg" in body
+
+
+def test_a_second_window_on_a_taken_port_says_so(raw_config: dict, tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.safe_dump(raw_config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    holder = socket.socket()
+    holder.bind((HOST, 0))
+    holder.listen(1)
+    port = holder.getsockname()[1]
+    outcome: list = []
+
+    def run() -> None:
+        outcome.append(web.serve(config_path, host=HOST, port=port, open_browser=False))
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    worker.join(timeout=8)
+    holder.close()
+
+    assert outcome == [2], "a silent second copy would keep serving the old code"
