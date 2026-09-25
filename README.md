@@ -80,10 +80,14 @@ evenews web --port 9000 --no-browser   # 换端口 / 服务器上不自动开浏
 | `logo_text` | 图标读不到、或邮件客户端不显示图片时的文字报头：CTONE |
 | `site` | 页脚官网链接：https://www.kzhytech.com |
 | `kicker` | 报头副标题：凯铮寰宇 CTONE · 算力驱动未来 |
-| `accent` / `label` / `text` / `background` | 配色取自官网样式：`#007492` / `#0092b5` / `#0a1226`，纸白底 `#f5f3ee` |
+| `theme` | `light`（纸白底）或 `dark`（官网那种近黑蓝 `#060b14`）。设置页下拉切换时会把该主题的全套色值回填进下面的颜色框 |
+| `background` / `card` / `text` / `body` / `muted` / `accent` / `label` | 逐个覆盖主题色，**留空即跟随 `theme` 的色板**。色板只在后端一处：`evenews.render.PALETTES`，邮件模板和设置页共用 |
 
-- 图标以 `data:` URI 内嵌进邮件，不依赖图床外链，转发到谁都看得到；超过 180 KB 自动不放图，报头退回文字，不会把邮件撑爆。
-- 设置页跟着换成同一套配色，浏览器页签图标、页头 logo 和「报头与署名」里的预览都读同一个 `logo_file`（接口 `/api/brand-logo`）。
+- 图标以 `data:` URI 内嵌进落盘的 `digest.html`，本地直接双击打开也不掉图；超过 180 KB 自动不放图，报头退回文字，不会把邮件撑爆。
+- 发信时 `email.attach_logo`（默认 `true`）改为把 logo 作为**内联附件**（`Content-ID: <evenews-logo>`）随邮件发出，正文里引用 `cid:evenews-logo`。桌面 Outlook / 企业邮客户端不用下载附件就能看到报头，也不会因为图片代理而掉图。
+- 深色版式做了文字层级：正文用 `body`（深色下 `#dce6f3`）而不是纯白，标题 / 正文 / 元信息三级分明，条目之间 1px 分隔线、编辑点评带左边线。邮件外层 `<table>` 带 `bgcolor`，并声明 `color-scheme`，Outlook 与系统深色模式不会把配色刷花。
+- 设置页跟着主题走：`/api/state` 里带 `palettes`，切 `theme` 时页面配色与表单配色框同时更新；深浅两套下输入框、按钮、状态徽章、日志框、提示气泡都各自有对比度合格的取值。
+- 浏览器页签图标、页头 logo 和「报头与署名」里的预览都读同一个 `logo_file`（接口 `/api/brand-logo`）。
 - 换公司只要改 `brand` 段，再把新图放进 `src/evenews/data/`（那里会被打进包里）。
 - 改完代码要重启设置页才生效：端口被旧的 `evenews web` 占着时，新进程会直接退出并提示换端口，不会再静默地让你看旧页面。
 
@@ -155,10 +159,11 @@ email:
   from: "AI 每日资讯 <bot@example.com>"
   to: [team@example.com]
   subject_template: "{title} · {date}"
-  attach_html: false
+  attach_html: false     # 附件带一份自包含 digest.html
+  attach_logo: true      # logo 作为内联附件（cid:evenews-logo）随信发出
 ```
 
-QQ / 163 / 企业邮需要在邮箱设置里开启 SMTP 并生成**授权码**当密码。正文是 HTML + 纯文本双版本，手机端和纯文本客户端都能看。
+QQ / 163 / 企业邮需要在邮箱设置里开启 SMTP 并生成**授权码**当密码。正文是 HTML + 纯文本双版本，手机端和纯文本客户端都能看。报头图片用内联附件时，若客户端把图片挡住，`alt` 会退回公司名 / `logo_text` 文字报头，版式不会塌。
 
 ## 目录结构
 

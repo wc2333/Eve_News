@@ -6,7 +6,9 @@
 <title>AI 每日资讯 · 设置</title>
 <link rel="icon" href="/api/brand-logo">
 <style>
-:root { --bg:#f5f3ee; --ink:#1f2328; --line:#d9d4c9; --accent:#b5322d; --label:#2f5c9b; --muted:#8b8f95; --card:#fffdf8; }
+:root { --bg:#f5f3ee; --ink:#1f2328; --line:#d9d4c9; --accent:#007492; --label:#0092b5; --muted:#8b8f95; --card:#fffdf8; --field:#ffffff; --ok-bg:#e7f0e7; --ok:#2b6b33; --off-bg:#f3e3e2; --toast-bg:#1f2328; --toast-ink:#ffffff; --err-bg:#b5322d; --err-ink:#ffffff; }
+:root[data-theme=dark] { --field:#0d1526; --ok-bg:#122a21; --ok:#63d29d; --off-bg:#2a171c;
+  --toast-bg:#f4f8fc; --toast-ink:#08111f; --err-bg:#3a161b; --err-ink:#f2b8b1; }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 "Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif; }
 header { background:var(--card); border-bottom:2px solid var(--accent); padding:14px 22px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
@@ -24,11 +26,16 @@ section[hidden] { display:none; }
 .row label { color:var(--label); font-weight:600; padding-top:5px; }
 .row .note { color:var(--muted); font-size:12px; grid-column:2; }
 input[type=text], input[type=number], input[type=time], input[type=password], select, textarea {
-  width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:4px; background:#fff; color:var(--ink); font:inherit; }
+  width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:4px; background:var(--field); color:var(--ink); font:inherit; }
+input::placeholder, textarea::placeholder { color:var(--muted); }
+input:focus, select:focus, textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+select option { background:var(--field); color:var(--ink); }
+input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent); }
+:root[data-theme=dark] input[type=time]::-webkit-calendar-picker-indicator { filter:invert(1) opacity(.7); }
 textarea { min-height:64px; font-family:ui-monospace,Consolas,monospace; font-size:12.5px; }
 .check { display:flex; align-items:center; gap:8px; padding-top:6px; }
 .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
-button.act { border:1px solid var(--label); background:#fff; color:var(--label); padding:8px 14px; border-radius:4px; cursor:pointer; font-weight:600; }
+button.act { border:1px solid var(--label); background:var(--field); color:var(--label); padding:8px 14px; border-radius:4px; cursor:pointer; font-weight:600; }
 button.act.primary { background:var(--label); color:#fff; }
 button.act.danger { border-color:var(--accent); color:var(--accent); }
 button.act:disabled { opacity:.5; cursor:progress; }
@@ -36,16 +43,16 @@ button.act:disabled { opacity:.5; cursor:progress; }
 .sec .head { display:flex; align-items:center; gap:10px; }
 .sec .head b { font:700 16px/1.4 Georgia,"Songti SC",serif; }
 .sec .tags { color:var(--muted); font-size:12px; }
-pre.out { background:#f0ece4; border-radius:4px; padding:10px 12px; max-height:260px; overflow:auto; font-size:12px; white-space:pre-wrap; }
+pre.out { background:var(--field); border:1px solid var(--line); border-radius:4px; padding:10px 12px; max-height:260px; overflow:auto; font-size:12px; white-space:pre-wrap; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
 td, th { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
-.badge { font-size:11px; padding:2px 7px; border-radius:999px; background:#e7f0e7; color:#2b6b33; }
-.badge.off { background:#f3e3e2; color:var(--accent); }
+.badge { font-size:11px; padding:2px 7px; border-radius:999px; background:var(--ok-bg); color:var(--ok); }
+.badge.off { background:var(--off-bg); color:var(--accent); }
 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 22px; }
-iframe { width:100%; height:560px; border:1px solid var(--line); background:#fff; border-radius:4px; }
-#toast { position:fixed; right:20px; bottom:20px; max-width:380px; background:var(--ink); color:#fff; padding:12px 15px; border-radius:6px; font-size:13px; opacity:0; transition:.25s; white-space:pre-wrap; }
+iframe { width:100%; height:560px; border:1px solid var(--line); background:var(--field); border-radius:4px; }
+#toast { position:fixed; right:20px; bottom:20px; max-width:380px; background:var(--toast-bg); color:var(--toast-ink); padding:12px 15px; border-radius:6px; font-size:13px; opacity:0; transition:.25s; white-space:pre-wrap; }
 #toast.show { opacity:.96; }
-#toast.err { background:var(--accent); }
+#toast.err { background:var(--err-bg); color:var(--err-ink); }
 </style>
 </head>
 <body>
@@ -144,6 +151,7 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:#fff
     <div class="grid2">
       <div class="row"><label>company</label><input type="text" data-path="brand.company"></div>
       <div class="row"><label>logo_text</label><input type="text" data-path="brand.logo_text"></div>
+      <div class="row"><label>theme</label><select data-path="brand.theme"><option value="light">light（纸白）</option><option value="dark">dark（官网深色）</option></select></div>
       <div class="row"><label>logo_file</label><input type="text" data-path="brand.logo_file" placeholder="brand-logo-kzhy.jpg 或图片绝对路径"></div>
       <div class="row"><label>site</label><input type="text" data-path="brand.site" placeholder="https://www.kzhytech.com"></div>
       <div class="row"><label>title</label><input type="text" data-path="brand.title"></div>
@@ -155,9 +163,12 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:#fff
       <div class="row"><label>accent</label><input type="text" data-path="brand.accent" placeholder="#007492"></div>
       <div class="row"><label>label</label><input type="text" data-path="brand.label" placeholder="#0092b5"></div>
       <div class="row"><label>background</label><input type="text" data-path="brand.background" placeholder="#f5f3ee"></div>
-      <div class="row"><label>text</label><input type="text" data-path="brand.text" placeholder="#0a1226"></div>
+      <div class="row"><label>text</label><input type="text" data-path="brand.text" placeholder="留空跟 theme"></div>
+      <div class="row"><label>card</label><input type="text" data-path="brand.card" placeholder="卡片底色，留空跟 theme"></div>
+      <div class="row"><label>body</label><input type="text" data-path="brand.body" placeholder="正文色，留空跟 theme"></div>
+      <div class="row"><label>muted</label><input type="text" data-path="brand.muted" placeholder="次要信息色，留空跟 theme"></div>
     </div>
-    <p class="hint">logo_file 填 evenews 自带文件名（brand-logo-kzhy.jpg 公司标 / brand-logo-ctone.png 产品字标），或本机图片的绝对路径；图片会以 base64 内嵌进邮件，不依赖外链。改完点保存，本页配色与图标会跟着变。</p>
+    <p class="hint">logo_file 填 evenews 自带文件名（brand-logo-kzhy.jpg 公司标 / brand-logo-ctone.png 产品字标），或本机图片的绝对路径；图片会以 base64 内嵌进邮件，不依赖外链。颜色留空就跟着 theme 走（色板由后端给出，与邮件完全一致）；选了 theme 会顺手把色值填进来，还能逐条微调。改完点保存，本页配色与图标会跟着变。</p>
     <p class="hint"><img id="logopreview" alt="" src="" style="height:32px;background:#fffdf8;border:1px solid var(--line);padding:4px;display:none;"> <span id="logohint">未设置图标</span></p>
     <div class="actions"><button class="act primary" data-save="settings">保存</button></div>
   </div>
@@ -243,13 +254,45 @@ async function api(path, payload, method, soft) {
   if (!response.ok || (data.ok === false && !soft)) throw new Error(data.error || ("HTTP " + response.status));
   return data;
 }
-function theme() {
+function themeColors(pick) {
+  const brand = ((state.raw || {}).brand) || {};
+  const palettes = state.palettes || {};
+  const name = String(pick || brand.theme || "light").toLowerCase();
+  const preset = palettes[name] || palettes.light || {};
+  return {
+    name: palettes[name] ? name : "light",
+    background: brand.background || preset.background || "#f5f3ee",
+    card: brand.card || preset.card || "#fffdf8",
+    line: preset.line || "#d9d4c9",
+    ink: brand.text || preset.ink || "#1f2328",
+    muted: brand.muted || preset.muted || "#71767e",
+    accent: brand.accent || preset.accent || "#007492",
+    label: brand.label || preset.label || "#0092b5",
+  };
+}
+function applyThemeChoice() {
+  const select = document.querySelector('[data-path="brand.theme"]');
+  if (!select) return;
+  const preset = (state.palettes || {})[select.value] || {};
+  const map = { "brand.background": "background", "brand.card": "card", "brand.text": "ink", "brand.muted": "muted", "brand.accent": "accent", "brand.label": "label" };
+  Object.keys(map).forEach((path) => {
+    const box = document.querySelector('[data-path="' + path + '"]');
+    if (box && preset[map[path]]) box.value = preset[map[path]];
+  });
+  theme(select.value);
+}
+function theme(pick) {
+  const colors = themeColors(pick);
   const brand = ((state.raw || {}).brand) || {};
   const root = document.documentElement.style;
-  root.setProperty("--accent", brand.accent || "#b5322d");
-  root.setProperty("--label", brand.label || "#2f5c9b");
-  root.setProperty("--bg", brand.background || "#f5f3ee");
-  root.setProperty("--ink", brand.text || "#1f2328");
+  document.documentElement.dataset.theme = colors.name;
+  root.setProperty("--accent", colors.accent);
+  root.setProperty("--label", colors.label);
+  root.setProperty("--bg", colors.background);
+  root.setProperty("--ink", colors.ink);
+  root.setProperty("--card", colors.card);
+  root.setProperty("--line", colors.line);
+  root.setProperty("--muted", colors.muted);
   const title = (brand.title || "AI 每日资讯") + " · 设置";
   document.title = title;
   document.getElementById("apptitle").textContent = title;
@@ -405,6 +448,7 @@ nodes("#tabs button").forEach((button) => {
     nodes("main > section").forEach((section) => { section.hidden = section.id !== button.dataset.tab; });
   };
 });
+nodes('[data-path="brand.theme"]').forEach((select) => { select.onchange = applyThemeChoice; });
 nodes("[data-save=settings]").forEach((button) => {
   button.onclick = async () => {
     button.disabled = true;

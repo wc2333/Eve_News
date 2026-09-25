@@ -62,4 +62,5 @@ def test_shipped_defaults_carry_the_company_identity(tmp_path):
     assert config.brand.company == "凯铮寰宇"
     assert config.brand.logo_file == "brand-logo-kzhy.jpg"
     assert "kzhytech.com" in config.brand.site
-    assert config.brand.accent == "#007492"
+    assert config.brand.theme == "dark"
+    assert not config.brand.background, "colours come from the theme palette unless overridden"

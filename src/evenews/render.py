@@ -21,6 +21,48 @@ MAX_LOGO_BYTES = 180_000
 log = logging.getLogger("evenews.render")
 
 
+# One place for every colour the email uses so a theme swap never leaves a light
+# card floating on a dark page. Non-empty brand fields override the preset.
+PALETTES = {
+    "light": {
+        "background": "#f5f3ee", "card": "#fffdf8", "plate": "#fffdf8", "plate_line": "#e7e1d6",
+        "line": "#d9d4c9", "ink": "#1f2328", "body": "#24282f", "muted": "#71767e",
+        "faint": "#a2a6ac", "number": "#bdb6a7", "lead_bg": "#efeadf", "lead_ink": "#1f2328",
+        "accent": "#007492", "label": "#0092b5", "warn_bg": "#fcecea", "warn_line": "#e9b7b1",
+        "warn_ink": "#8a2415", "fail_ink": "#b5716c",
+    },
+    "dark": {
+        "background": "#060b14", "card": "#0a1226", "plate": "#f4f8fc", "plate_line": "#1d293d",
+        "line": "#1d293d", "ink": "#f4f8fd", "body": "#dce6f3", "muted": "#93a6be",
+        "faint": "#6d8098", "number": "#4c688a", "lead_bg": "#0d1526", "lead_ink": "#eef4fb",
+        "accent": "#00a5ef", "label": "#43bdf0", "warn_bg": "#22151a", "warn_line": "#6f3833",
+        "warn_ink": "#f2b8b1", "fail_ink": "#e79a92",
+    },
+}
+
+
+def palette(brand: Brand) -> dict[str, str]:
+    """The colour set the template paints with."""
+    theme = str(brand.theme or "light").strip().lower()
+    colors = dict(PALETTES.get(theme, PALETTES["light"]))
+    overrides = {
+        "background": brand.background,
+        "card": brand.card,
+        "ink": brand.text,
+        "body": brand.body,
+        "muted": brand.muted,
+        "accent": brand.accent,
+        "label": brand.label,
+    }
+    for key, value in overrides.items():
+        if str(value or "").strip():
+            colors[key] = str(value).strip()
+    colors["theme"] = theme if theme in PALETTES else "light"
+    return colors
+
+
+
+
 def resolve_logo(brand: Brand) -> tuple[bytes, str]:
     """The masthead mark: a path in the config, or a file shipped in evenews/data."""
     name = str(brand.logo_file or "").strip()
@@ -104,6 +146,7 @@ def build_context(digest: Digest, brand: Brand) -> dict[str, Any]:
         "digest": digest,
         "brand": brand,
         "logo": logo_data_uri(brand),
+        "c": palette(brand),
         "groups": groups,
         "sources": sources,
         "source_rows": source_rows,

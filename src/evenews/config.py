@@ -115,14 +115,18 @@ class Brand:
     logo_text: str = ""
     logo_file: str = ""
     site: str = ""
+    theme: str = "light"          # light 纸白 / dark 官网深色；空着按 light
     kicker: str = "DAILY AI BRIEFING"
     title: str = "AI 每日资讯"
     classification: str = "内部参考"
     footer_note: str = "自动生成 · 仅供内部参考，转载请注明出处"
-    background: str = "#f5f3ee"
-    accent: str = "#b5322d"
-    label: str = "#2f5c9b"
-    text: str = "#1f2328"
+    background: str = ""
+    accent: str = ""
+    label: str = ""
+    text: str = ""
+    card: str = ""
+    body: str = ""
+    muted: str = ""
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Brand":
@@ -159,6 +163,7 @@ class EmailConfig:
     subject_template: str = "{title} · {date}"
     subject_prefix: str = ""
     attach_html: bool = False
+    attach_logo: bool = True
     timeout: int = 30
     retries: int = 2
 
@@ -177,6 +182,7 @@ class EmailConfig:
             subject_template=str(raw.get("subject_template") or "{title} · {date}"),
             subject_prefix=str(raw.get("subject_prefix") or ""),
             attach_html=bool(raw.get("attach_html", False)),
+            attach_logo=bool(raw.get("attach_logo", True)),
             timeout=int(raw.get("timeout") or 30),
             retries=int(raw.get("retries") or 0),
         )

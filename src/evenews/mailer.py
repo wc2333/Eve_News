@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import smtplib
 import ssl
 import time
@@ -19,6 +20,15 @@ class MailError(Exception):
     pass
 
 
+LOGO_CID = "evenews-logo"
+DATA_IMAGE = re.compile('src="data:image/[^"]*"')
+
+
+def _inline_images(html: str) -> str:
+    """Desktop Outlook drops data: URIs, so the sent copy points at the attached part."""
+    return DATA_IMAGE.sub('src="cid:' + LOGO_CID + '"', html)
+
+
 def build_message(
     config: EmailConfig,
     *,
@@ -27,6 +37,7 @@ def build_message(
     text: str,
     attachments: list[Path] | None = None,
     to: list[str] | None = None,
+    logo: tuple[bytes, str] | None = None,
 ) -> EmailMessage:
     message = EmailMessage()
     message["Subject"] = subject
@@ -41,8 +52,26 @@ def build_message(
     message["Date"] = formatdate(localtime=True)
     message["Message-ID"] = make_msgid()
     message["X-Mailer"] = "EveNews"
+    if logo and logo[0]:
+        html = _inline_images(html)
     message.set_content(text)
     message.add_alternative(html, subtype="html")
+    if logo and logo[0]:
+        # Desktop Outlook throws away data: URIs, so the mark also travels as an inline part.
+        maintype, _, subtype = (logo[1] or "image/jpeg").partition("/")
+        extension = (subtype or "jpeg").replace("svg+xml", "svg")
+        name = "evenews-logo." + extension
+        message.add_attachment(
+            logo[0],
+            maintype=maintype or "image",
+            subtype=subtype or "jpeg",
+            filename=name,
+            disposition="inline",
+        )
+        # add_attachment only hands back a part sometimes, so label it from the tree.
+        for part in message.walk():
+            if part.get_content_maintype() == "image" and part.get_filename() == name:
+                part["Content-ID"] = "<" + LOGO_CID + ">"
     for path in attachments or []:
         path = Path(path)
         if path.is_file():
@@ -95,7 +124,8 @@ def send_digest(
     text: str,
     attachments: list[Path] | None = None,
     to: list[str] | None = None,
+    logo: tuple[bytes, str] | None = None,
 ) -> list[str]:
-    message = build_message(config, subject=subject, html=html, text=text, attachments=attachments, to=to)
+    message = build_message(config, subject=subject, html=html, text=text, attachments=attachments, to=to, logo=logo)
     send(config, message)
     return list(getattr(message, "recipients", []))

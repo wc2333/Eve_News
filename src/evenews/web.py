@@ -25,6 +25,7 @@ from .config import Config, ConfigError, load_dotenv
 from .mailer import send_digest
 from .pipeline import SAMPLE_FEEDS, run_once
 from .state import StateStore
+from .render import PALETTES
 
 log = logging.getLogger("evenews.web")
 
@@ -240,6 +241,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 }
                 for section in config.sections
             ],
+            "palettes": PALETTES,
             "problems": config.problems(need_email=False),
             "secrets": secret_status(config),
             "state": state_summary(config),

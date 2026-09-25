@@ -3,73 +3,79 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="{{ c.theme }}">
 <title>{{ brand.title }} · {{ date_cn }}</title>
 </head>
-<body style="margin:0;padding:0;background:{{ brand.background }};color:{{ brand.text }};">
-<div style="max-width:780px;margin:0 auto;padding:26px 20px 36px;">
+<body style="margin:0;padding:0;background:{{ c.background }};color:{{ c.ink }};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="{{ c.background }}" style="background:{{ c.background }};border-collapse:collapse;">
+<tr>
+<td align="center" style="padding:0;background:{{ c.background }};">
+<div style="max-width:780px;margin:0 auto;padding:26px 20px 36px;text-align:left;background:{{ c.background }};color:{{ c.ink }};">
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
     <tr>
-      <td width="168" style="vertical-align:middle;">
-        {% if logo %}<span style="display:inline-block;background:#fffdf8;border:1px solid #e7e1d6;padding:5px 9px;"><img src="{{ logo }}" alt="{{ brand.company or brand.logo_text or brand.title }}" height="26" style="display:block;border:0;"></span>{% endif %}
-        {% if brand.logo_text %}<div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:{{ brand.accent }};letter-spacing:1px;margin-top:{% if logo %}6px{% else %}0{% endif %};">{{ brand.logo_text }}</div>
-        {% elif brand.company and not logo %}<div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:{{ brand.accent }};letter-spacing:1px;">{{ brand.company }}</div>
+      <td width="168" valign="middle" style="vertical-align:middle;">
+        {% if logo %}<span style="display:inline-block;background:{{ c.plate }};border:1px solid {{ c.plate_line }};padding:5px 9px;"><img src="{{ logo }}" alt="{{ brand.company or brand.logo_text or brand.title }}" height="26" style="display:block;border:0;"></span>{% endif %}
+        {% if brand.logo_text %}<div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:{{ c.accent }};letter-spacing:1px;margin-top:{% if logo %}6px{% else %}0{% endif %};">{{ brand.logo_text }}</div>
+        {% elif brand.company and not logo %}<div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:{{ c.accent }};letter-spacing:1px;">{{ brand.company }}</div>
         {% endif %}
       </td>
-      <td align="center" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:4px;color:#8b8f95;">{{ brand.kicker }}</td>
-      <td width="120"></td>
+      <td align="center" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:4px;color:{{ c.muted }};">{{ brand.kicker }}</td>
+      <td width="168" align="right" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1px;color:{{ c.faint }};">{{ digest.item_count }} 条</td>
     </tr>
   </table>
 
-  <div style="text-align:center;font-family:'Songti SC','SimSun',Georgia,serif;font-size:30px;font-weight:700;letter-spacing:4px;margin:8px 0 16px;color:{{ brand.text }};">{{ brand.title }}</div>
+  <div style="text-align:center;font-family:'Songti SC','SimSun',Georgia,serif;font-size:32px;font-weight:700;letter-spacing:5px;margin:10px 0 16px;color:{{ c.ink }};">{{ brand.title }}</div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:2px solid {{ brand.accent }};border-bottom:1px solid #d9d4c9;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#6b7078;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:2px solid {{ c.accent }};border-bottom:1px solid {{ c.line }};font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:1px;color:{{ c.muted }};">
     <tr>
-      <td style="padding:8px 0;">{{ date_cn }}</td>
-      <td align="center" style="padding:8px 0;">{{ brand.classification }}</td>
-      <td align="right" style="padding:8px 0;color:#9a9ea5;">{{ digest.generated_at }}</td>
+      <td style="padding:8px 0;color:{{ c.ink }};font-weight:700;">{{ date_cn }}</td>
+      <td align="center" style="padding:8px 0;color:{{ c.label }};">{{ brand.classification }}</td>
+      <td align="right" style="padding:8px 0;color:{{ c.faint }};">{{ digest.generated_at }}</td>
     </tr>
   </table>
 
   {% if digest.stats.get("demo") %}
-  <div style="margin:18px 0 0;padding:11px 15px;background:#fcecea;border:1px solid #e9b7b1;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;line-height:1.7;color:#8a2415;">
+  <div style="margin:18px 0 0;padding:11px 15px;background:{{ c.warn_bg }};border:1px solid {{ c.warn_line }};font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;line-height:1.7;color:{{ c.warn_ink }};">
     离线演示：本期内容来自内置样例（src/evenews/sample/feeds），<b>不是真实新闻</b>。正式使用请在设置页点「生成今天的预览」或「立即生成并发送」。
   </div>
   {% endif %}
 
   {% if digest.lead %}
-  <div style="margin:26px 0 8px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:2px;color:{{ brand.label }};">今日摘要 · TODAY</div>
-  <div style="background:#efeadf;border-left:3px solid {{ brand.accent }};padding:14px 16px;font-family:'Songti SC','SimSun',Georgia,serif;font-size:15px;line-height:1.85;color:{{ brand.text }};">{{ digest.lead }}</div>
+  <div style="margin:26px 0 8px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:2px;color:{{ c.label }};">今日摘要 · TODAY</div>
+  <div style="background:{{ c.lead_bg }};border-left:3px solid {{ c.accent }};padding:15px 17px;font-family:'Songti SC','SimSun',Georgia,serif;font-size:15.5px;line-height:1.9;color:{{ c.lead_ink }};">{{ digest.lead }}</div>
   {% endif %}
 
   {% for group in groups %}
-  <div style="margin-top:34px;border-top:2px solid {{ brand.accent }};padding-top:12px;">
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:{{ brand.label }};">第 {{ group.index }} 版</span>
-    <span style="font-family:'Songti SC','SimSun',Georgia,serif;font-size:20px;font-weight:700;margin-left:10px;color:{{ brand.text }};">{{ group.section.title }}</span>
+  <div style="margin-top:34px;border-top:2px solid {{ c.accent }};padding-top:12px;">
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:{{ c.label }};">第 {{ group.index }} 版</span>
+    <span style="font-family:'Songti SC','SimSun',Georgia,serif;font-size:21px;font-weight:700;margin-left:10px;color:{{ c.ink }};">{{ group.section.title }}</span>
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11.5px;color:{{ c.faint }};margin-left:8px;">{{ group.entries | length }} 条</span>
     {% if group.section.description %}
-    <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#8b8f95;margin-top:4px;">{{ group.section.description }}</div>
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:{{ c.muted }};margin-top:4px;">{{ group.section.description }}</div>
     {% endif %}
   </div>
 
   {% for item in group.entries %}
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:18px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:{% if loop.first %}16px{% else %}0{% endif %};border-bottom:1px solid {{ c.line }};">
     <tr>
-      <td width="42" valign="top" style="font-family:Georgia,serif;font-size:22px;color:#c3bcae;">{{ item.number }}</td>
-      <td valign="top">
-        <div style="font-family:'Songti SC','SimSun',Georgia,serif;font-size:17px;font-weight:700;line-height:1.55;color:{{ brand.text }};">
-          <a href="{{ item.url }}" style="color:{{ brand.text }};text-decoration:none;">{{ item.title }}</a>
+      <td width="44" valign="top" style="vertical-align:top;padding:16px 0 18px;font-family:Georgia,serif;font-size:22px;color:{{ c.number }};">{{ item.number }}</td>
+      <td valign="top" style="vertical-align:top;padding:16px 0 18px;">
+        <div style="font-family:'Songti SC','SimSun',Georgia,serif;font-size:18px;font-weight:700;line-height:1.5;color:{{ c.ink }};">
+          <a href="{{ item.url }}" style="color:{{ c.ink }};text-decoration:none;font-weight:700;">{{ item.title }}</a>
         </div>
-        <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#8b8f95;margin-top:5px;">
-          <span style="color:{{ brand.label }};">{{ item.source }}</span>
+        <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11.5px;letter-spacing:.3px;color:{{ c.muted }};margin-top:7px;">
+          <span style="color:{{ c.label }};font-weight:700;">{{ item.source }}</span>
           {% if item.published %} · {{ item.published }}{% endif %}
           {% if item.score_label %} · 相关度 {{ item.score_label }}{% endif %}
+          {% if item.domain %} · {{ item.domain }}{% endif %}
         </div>
-        <div style="font-family:'Songti SC','SimSun',Georgia,serif;font-size:14.5px;line-height:1.8;margin-top:9px;color:#33383f;">{{ item.summary }}</div>
+        <div style="font-family:'Songti SC','SimSun',Georgia,serif;font-size:15px;line-height:1.95;margin-top:11px;color:{{ c.body }};">{{ item.summary }}</div>
         {% if item.why %}
-        <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#8b8f95;margin-top:7px;">编辑点评：{{ item.why }}</div>
+        <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;line-height:1.7;color:{{ c.muted }};margin-top:11px;padding-left:10px;border-left:2px solid {{ c.line }};">编辑点评：{{ item.why }}</div>
         {% endif %}
-        <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;margin-top:9px;">
-          <a href="{{ item.url }}" style="color:{{ brand.label }};text-decoration:none;">{{ item.source }} · {{ item.domain }} →</a>
+        <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;margin-top:11px;">
+          <a href="{{ item.url }}" style="color:{{ c.label }};text-decoration:none;font-weight:700;">读原文 →</a>
         </div>
       </td>
     </tr>
@@ -77,14 +83,14 @@
   {% endfor %}
   {% endfor %}
 
-  <div style="margin-top:36px;border-top:2px solid {{ brand.accent }};padding-top:14px;">
-    <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:{{ brand.text }};">本次引用来源</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:8px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#6b7078;">
+  <div style="margin-top:36px;border-top:2px solid {{ c.accent }};padding-top:14px;">
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:{{ c.ink }};">本次引用来源</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:8px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:{{ c.muted }};">
       {% for row in source_rows %}
       <tr>
         {% for cell in row %}
         <td style="padding:3px 0{% if loop.index0 %};padding-left:18px{% endif %};">
-          {% if cell %}<span style="color:{{ brand.text }};">{{ cell.name }}</span> <span style="color:#a2a6ac;">({{ cell.domain }})</span>{% endif %}
+          {% if cell %}<span style="color:{{ c.ink }};">{{ cell.name }}</span> <span style="color:{{ c.faint }};">({{ cell.domain }})</span>{% endif %}
         </td>
         {% endfor %}
       </tr>
@@ -93,7 +99,7 @@
   </div>
 
   {% if digest.stats.get("failed_sources") %}
-  <div style="margin-top:14px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#b5716c;">
+  <div style="margin-top:14px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.7;color:{{ c.fail_ink }};">
     本期 {{ digest.stats.sources }} 个来源中有 {{ digest.stats.failed_sources | length }} 个没抓到：{{ digest.stats.failed_sources | join('、') }}
     {% if digest.stats.get("fetch_errors") %}
     {% for line in digest.stats.fetch_errors %}<br />· {{ line }}
@@ -102,9 +108,12 @@
   </div>
   {% endif %}
 
-  <div style="margin-top:26px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#a2a6ac;">
-    {{ brand.title }} · {{ brand.footer_note }}{% if brand.company %} · {{ brand.company }}{% endif %}{% if brand.site %} · <a href="{{ brand.site }}" style="color:#9a9ea5;text-decoration:none;">{{ brand.site.split('//')[-1] }}</a>{% endif %}
+  <div style="margin-top:26px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.8;color:{{ c.faint }};">
+    {{ brand.title }} · {{ brand.footer_note }}{% if brand.company %} · {{ brand.company }}{% endif %}{% if brand.site %} · <a href="{{ brand.site }}" style="color:{{ c.faint }};text-decoration:none;">{{ brand.site.split('//')[-1] }}</a>{% endif %}
   </div>
 </div>
+</td>
+</tr>
+</table>
 </body>
 </html>

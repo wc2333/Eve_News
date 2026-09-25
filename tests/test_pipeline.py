@@ -257,3 +257,31 @@ def test_a_missing_logo_file_degrades_to_text():
     page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), broken)
     assert "data:image" not in page
     assert "CTONE" in page and "凯铮寰宇" in page
+
+
+def test_the_dark_theme_uses_the_site_palette():
+    page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), Brand(theme="dark"))
+    assert "#060b14" in page and "#f4f8fd" in page, "navy ground, near-white ink"
+    light = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), Brand(theme="light"))
+    assert "#f5f3ee" in light
+
+
+def test_a_body_colour_override_reaches_the_summary():
+    loud = Brand(theme="dark", body="#ffffff")
+    page = render_html(_digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])]), loud)
+    assert "color:#ffffff" in page
+
+
+def test_the_sent_copy_uses_the_inline_logo_part():
+    config = Config.from_dict({}, __import__("pathlib").Path("unused.yaml"))
+    message = build_message(
+        config.email,
+        subject="s",
+        html='<p><img src="data:image/jpeg;base64,QUJD"></p>',
+        text="t",
+        logo=(b"jpeg-bytes", "image/jpeg"),
+    )
+    html_part = [part.get_content() for part in message.walk() if part.get_content_type() == "text/html"][0]
+    assert "cid:evenews-logo" in html_part and "data:image" not in html_part
+    images = [part for part in message.walk() if part.get_content_maintype() == "image"]
+    assert len(images) == 1 and images[0]["Content-ID"] == "<evenews-logo>"

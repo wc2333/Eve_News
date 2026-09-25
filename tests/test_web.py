@@ -227,3 +227,11 @@ def test_a_second_window_on_a_taken_port_says_so(raw_config: dict, tmp_path):
     holder.close()
 
     assert outcome == [2], "a silent second copy would keep serving the old code"
+
+
+def test_the_snapshot_shares_the_email_palette(site):
+    client, _, _ = site
+    status, state = client.call("GET", "/api/state")
+    assert status == 200
+    assert state["palettes"]["dark"]["background"] == "#060b14"
+    assert state["palettes"]["light"]["background"] == "#f5f3ee"
