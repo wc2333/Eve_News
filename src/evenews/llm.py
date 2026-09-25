@@ -56,13 +56,68 @@ def extract_json(text: str) -> dict:
     if fenced:
         text = fenced.group(1)
     start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end <= start:
+    if start >= 0 and end > start:
+        try:
+            parsed = json.loads(text[start : end + 1])
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, dict):
+            return parsed
+    return salvage_truncated(text)
+
+
+BACKSLASH = chr(92)
+QUOTE = chr(34)
+BRACE_OPEN = chr(123)
+BRACE_CLOSE = chr(125)
+BRACKET_OPEN = chr(91)
+
+
+def _complete_objects(text: str) -> list[dict]:
+    """Every balanced object in a body that may stop half-way through."""
+    found: list[dict] = []
+    depth = 0
+    start = -1
+    in_string = False
+    escaped = False
+    for index, char in enumerate(text):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == BACKSLASH:
+                escaped = True
+            elif char == QUOTE:
+                in_string = False
+            continue
+        if char == QUOTE:
+            in_string = True
+        elif char == BRACE_OPEN:
+            if depth == 0:
+                start = index
+            depth += 1
+        elif char == BRACE_CLOSE and depth:
+            depth -= 1
+            if depth == 0 and start >= 0:
+                try:
+                    parsed = json.loads(text[start : index + 1])
+                except ValueError:
+                    parsed = None
+                if isinstance(parsed, dict):
+                    found.append(parsed)
+                start = -1
+    return found
+
+
+def salvage_truncated(text: str) -> dict:
+    """The answer stopped half-way: keep whatever the model did finish writing."""
+    head = text[text.find(BRACKET_OPEN) :] if BRACKET_OPEN in text else text
+    items = _complete_objects(head)
+    if not items:
         return {}
-    try:
-        parsed = json.loads(text[start : end + 1])
-    except ValueError:
-        return {}
-    return parsed if isinstance(parsed, dict) else {}
+    log.warning("模型返回被截断，先收下已经写完的 %d 条", len(items))
+    if any("ref" in item for item in items):
+        return {"items": items, "truncated": True}
+    return items[0]
 
 
 class BaseLLM:
@@ -107,23 +162,37 @@ class OpenAIChat(BaseLLM):
         }
         if self.cfg.json_mode:
             payload["response_format"] = {"type": "json_object"}
+        extra = dict(self.cfg.extra_body or {})   # 网关私有参数，例如关掉 Qwen 的思考开关
+        payload.update(extra)
         headers = {"Authorization": f"Bearer {self.cfg.api_key}", **self.cfg.headers}
         optional_order = ["response_format", "temperature", "max_tokens"]
         last_error: Exception | None = None
-        for _ in range(len(optional_order) + 1):
+        for _ in range(len(optional_order) + 2):
             try:
                 data = fetch_json(self._endpoint(), payload=payload, headers=headers, timeout=self.cfg.timeout, retries=self.cfg.retries, proxy=self.cfg.proxy or None)
                 choices = data.get("choices") or []
                 if not choices:
                     raise LLMError(f"{self.label} 返回里没有 choices")
-                return (choices[0].get("message") or {}).get("content") or ""
+                choice = choices[0]
+                if choice.get("finish_reason") == "length":
+                    log.warning(
+                        "%s 的输出在 max_output_tokens=%s 处被掐断：调大 llm.max_output_tokens 或调小 llm.batch_size",
+                        self.label,
+                        self.cfg.max_output_tokens,
+                    )
+                return (choice.get("message") or {}).get("content") or ""
             except (HttpError, LLMError) as exc:
                 last_error = exc
                 dropped = next((key for key in optional_order if key in payload), None)
-                if dropped is None:
+                if dropped:
+                    payload.pop(dropped)
+                elif any(key in payload for key in extra):
+                    dropped = "llm.extra_body"
+                    for key in extra:
+                        payload.pop(key, None)
+                else:
                     break
                 log.warning("%s 拒绝了参数 %s，去掉后重试：%s", self.label, dropped, exc)
-                payload.pop(dropped)
         raise LLMError(f"{self.label} 调用失败: {last_error}")
 
 
@@ -138,6 +207,7 @@ class AnthropicChat(BaseLLM):
             "max_tokens": self.cfg.max_output_tokens,
             "temperature": self.cfg.temperature,
         }
+        payload.update(self.cfg.extra_body or {})
         headers = {
             "x-api-key": self.cfg.api_key,
             "anthropic-version": "2023-06-01",
@@ -161,7 +231,7 @@ class OllamaChat(BaseLLM):
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "options": {"temperature": self.cfg.temperature},
+            "options": {"temperature": self.cfg.temperature, **(self.cfg.extra_body or {})},
             "format": "json" if self.cfg.json_mode else "",
         }
         try:
@@ -197,7 +267,7 @@ class MockLLM(BaseLLM):
                 hits = [k for k in keywords if k and k in blob]
                 body = str(candidate.get("summary") or candidate.get("title") or "").strip()
                 sentences = [s.strip() for s in SENTENCE_SPLIT.split(body) if s.strip()]
-                summary = "".join(sentences[:5])[:300] or body[:300]
+                summary = "".join(sentences[:9])[:420] or body[:420]
                 digits = len(re.findall(r"\d", str(candidate.get("title", ""))))
                 score = round(min(0.95, 0.35 + 0.12 * min(len(hits), 4) + 0.02 * min(digits, 5)), 3)
                 items.append(

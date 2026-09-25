@@ -226,7 +226,80 @@ def test_the_model_is_asked_for_a_longer_analysis(config, fixtures_dir):
         run_date="2026-09-25",
     )
     assert recorded, "the curator must actually consult the model"
-    assert any("200-260" in call for call in recorded), "the brief asks for a long analysis"
+    assert any("300-400 个汉字" in call for call in recorded), "the brief asks for a 300-400 字 write-up"
+    assert any("背景" in call for call in recorded), "the brief asks for context, not a rephrased headline"
+
+
+def test_the_write_up_budget_follows_the_token_cap():
+    from evenews.config import LLMConfig
+    from evenews.curator import summary_rule
+
+    roomy = summary_rule(MockLLM(LLMConfig(max_output_tokens=8000, batch_size=8)), 8)
+    assert roomy.startswith("300-400 个汉字"), "the default budget is the full write-up"
+
+    shrunk = summary_rule(MockLLM(LLMConfig(max_output_tokens=1500, batch_size=8)), 8)
+    low, high = [int(part) for part in shrunk.split("个汉字")[0].split("-")]
+    assert 120 <= low < high < 300, shrunk
+    assert summary_rule(MockLLM(LLMConfig(max_output_tokens=0)), 0).startswith("300-400 个汉字")
+
+
+def test_a_cut_off_answer_keeps_the_items_that_did_arrive():
+    from evenews.llm import extract_json
+
+    half = '{"items": [{"ref": 0, "score": 0.8, "summary": "第一条的长介绍"}, {"ref": 1, "score": 0.7, "summ'
+    data = extract_json(half)
+    assert [item["ref"] for item in data.get("items") or []] == [0]
+    assert data.get("truncated") is True
+    assert extract_json('{"lead": "写到一半就断了') == {}
+
+
+def test_a_thin_answer_is_asked_again_for_the_leftovers(config):
+    asked: list = []
+
+    class CuttingLLM(MockLLM):
+        """Answers two candidates per call, as if the output budget ran out after each pair."""
+
+        def json_task(self, task, payload):
+            if task != "curate":
+                return super().json_task(task, payload)
+            refs = [candidate["ref"] for candidate in payload["candidates"]]
+            asked.append(refs)
+            keep = refs[:2]
+            return {"items": [{"ref": ref, "score": 0.7, "summary": "综合介绍" + str(ref), "why": "值得看"} for ref in keep]}
+
+    config.llm.batch_size = 4
+    titles = [
+        "国产大模型放出 32B 权重",
+        "英伟达推理卡把大模型推理成本砍半",
+        "欧盟人工智能法案细则落地，模型厂商需报备",
+        "OpenAI 公布长上下文评测方法",
+        "智谱开源多模态智能体模型",
+        "阿里通义旗舰模型降价一半",
+    ]
+    articles = [
+        Article(
+            title=title,
+            url=f"https://a/{index}",
+            source="qbitai",
+            published="2026-09-25",
+            raw_summary="官方放出模型权重、评测集与技术报告，开发者可以直接本地部署该模型。",
+        )
+        for index, title in enumerate(titles)
+    ]
+    section = config.sections[0]
+    digest = curate_section(
+        section,
+        articles,
+        llm=CuttingLLM(config.llm),
+        collection=config.collection,
+        llm_cfg=config.llm,
+        run_date="2026-09-25",
+    )
+    assert asked[0] == [0, 1, 2, 3], "one batch per call"
+    assert asked[-1] == [4, 5], "the next batch is asked about as usual"
+    assert [2] in asked and [3] in asked, "the two that came back missing are chased one by one"
+    assert digest.items
+    assert all(item.summary.startswith("综合介绍") for item in digest.items), "every item ends up with the model write-up"
 
 
 def test_history_dedupe_only_clears_older_days(tmp_path):

@@ -48,11 +48,11 @@ def rule_score(article: Article, hits: list[str], run_date: str = "") -> float:
     return round(min(score, 0.9), 3)
 
 
-def plain_summary(article: Article, limit: int = 260) -> str:
+def plain_summary(article: Article, limit: int = 360) -> str:
     """Fallback blurb when the model is off: stitch more sentences so it still reads whole."""
     body = (article.raw_summary or article.title).strip()
     sentences = [s.strip() for s in SENTENCE_SPLIT.split(body) if s.strip()]
-    text = "".join(sentences[:5]) if sentences else body
+    text = "".join(sentences[:9]) if sentences else body
     if len(text) < limit * 2 and article.why:
         text = f"{text}{article.why}。"
     return text[:limit] or article.title[:limit]
@@ -67,12 +67,34 @@ def is_relevant(article: Article, cfg: CollectionConfig) -> bool:
     return True
 
 
+SUMMARY_CHARS = (300, 400)
+
+
+def summary_rule(llm: BaseLLM, count: int) -> str:
+    """How long one write-up may run, given what the model can hand back in a single call."""
+    low, high = SUMMARY_CHARS
+    budget = int(getattr(llm.cfg, "max_output_tokens", 0) or 0)
+    if budget > 0 and count > 0:
+        room = int(budget * 1.4 / count) - 60  # 汉字约 1.4 字/token，再扣掉分数与关键词等字段
+        high = max(120, min(high, room))
+        low = min(low, max(120, high - 80))
+    return (
+        f"{low}-{high} 个汉字（写满 {low} 字、别超过 {high} 字），一段连贯中文："
+        "先用一句话交代背景（这件事此前是什么状态），"
+        "再说清今天到底发生了什么、主体是谁、关键数字参数与时间点，"
+        "有官方说法、各方回应或可对比的数据就一并写上，"
+        "最后一句给出影响或对读者的意义。"
+        "不要复述标题、不要分点、不要堆形容词；"
+        "给定材料没有的信息一律不要编，宁可写满一半也不要造假"
+    )
+
+
 def _batches(items: list[Article], size: int) -> list[list[Article]]:
     size = max(4, size)
     return [items[i : i + size] for i in range(0, len(items), size)]
 
 
-def _ask_model(llm: BaseLLM, section: Section, batch: list[Article], *, offset: int = 0) -> dict[int, dict]:
+def _ask_model(llm: BaseLLM, section: Section, pairs: list[tuple[int, Article]]) -> dict[int, dict]:
     payload = {
         "section": {
             "id": section.id,
@@ -84,18 +106,18 @@ def _ask_model(llm: BaseLLM, section: Section, batch: list[Article], *, offset: 
         "today": datetime.now().date().isoformat(),
         "candidates": [
             {
-                "ref": offset + index,
+                "ref": ref,
                 "title": article.title,
-                "summary": article.raw_summary[:400],
+                "summary": article.raw_summary[:1200],
                 "source": article.source,
                 "published": article.published,
             }
-            for index, article in enumerate(batch)
+            for ref, article in pairs
         ],
         "rules": {
             "score_range": "0-1，表示值得推送给同事的程度",
             "drop": "与板块无关、纯营销、重复内容请给 0-0.2 的低分",
-            "summary": "200-260 个汉字，一段连贯中文：先说清楚发生了什么，再补关键数字/参数/时间点，最后一句给出影响或对读者的意义；不要复述标题、不要分点、不要堆形容词",
+            "summary": summary_rule(llm, len(pairs)),
             "why": "一句话说明为什么值得看，不超过 30 字",
             "output": '{"items":[{"ref":0,"score":0.0,"summary":"","why":"","keywords":[]}, ...]}',
         },
@@ -111,6 +133,42 @@ def _ask_model(llm: BaseLLM, section: Section, batch: list[Article], *, offset: 
             continue
         parsed[ref] = entry
     return parsed
+
+
+def _collect(llm: BaseLLM, section: Section, pairs: list[tuple[int, Article]], *, depth: int = 0) -> dict[int, dict]:
+    """Ask about a batch, then chase the leftovers in smaller batches.
+
+    A long write-up per item is exactly what makes a model run out of output room mid-JSON, so a
+    thin answer is treated as "keep what arrived, re-ask the rest" instead of losing the batch.
+    """
+    failure: Exception | None = None
+    try:
+        got = _ask_model(llm, section, pairs)
+    except Exception as exc:  # noqa: BLE001 - handled below, one bad batch must not kill the digest
+        got, failure = {}, exc
+    left = [pair for pair in pairs if pair[0] not in got]
+    if not left or depth >= 1 or len(pairs) <= 1:
+        if failure is not None:
+            raise failure
+        return got
+    half = max(1, len(left) // 2)
+    log.warning(
+        "板块 %s：%d 条里模型只交回 %d 条%r，拆成每批 %d 条补写",
+        section.id,
+        len(pairs),
+        len(pairs) - len(left),
+        "" if failure is None else "（" + str(failure) + "）",
+        half,
+    )
+    for chunk in (left[:half], left[half:]):
+        if not chunk:
+            continue
+        try:
+            got.update(_collect(llm, section, chunk, depth=depth + 1))
+        except Exception as exc:  # noqa: BLE001
+            log.warning("板块 %s 补写仍失败，这部分改用规则打分：%s", section.id, exc)
+    return got
+
 
 
 def curate_section(
@@ -145,10 +203,9 @@ def curate_section(
         offset = 0
         for batch_index, batch in enumerate(batches):
             try:
-                decisions.update(_ask_model(llm, section, batch, offset=offset))
+                decisions.update(_collect(llm, section, list(enumerate(batch, start=offset))))
             except Exception as exc:  # noqa: BLE001 - a model hiccup must not kill the digest
                 log.warning("板块 %s 第 %d 批模型筛选失败，该批改用规则打分：%s", section.id, batch_index + 1, exc)
-                continue
             offset += len(batch)
 
     curated: list[Article] = []

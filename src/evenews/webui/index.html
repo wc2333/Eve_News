@@ -87,6 +87,8 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
       <div class="row"><label>api_key_env</label><input type="text" data-path="llm.api_key_env"></div>
       <div class="row"><label>temperature</label><input type="number" step="0.1" data-path="llm.temperature"></div>
       <div class="row"><label>batch_size</label><input type="number" data-path="llm.batch_size"></div>
+      <div class="row"><label>max_output_tokens</label><input type="number" data-path="llm.max_output_tokens"></div>
+      <div class="note">每条介绍目标 300-400 字；推理型模型的思考也算进 max_output_tokens，被掐断就调大它或调小 batch_size</div>
     </div>
     <div class="grid2">
       <div class="row"><label>筛选排序 select</label><div class="check"><input type="checkbox" data-path="llm.tasks.select"></div></div>

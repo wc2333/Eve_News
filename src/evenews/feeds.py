@@ -69,7 +69,7 @@ def parse_feed(raw: bytes, *, source_name: str, limit: int) -> list[Article]:
         url = (entry.get("link") or "").strip()
         if not title or not url:
             continue
-        summary = clean(entry.get("summary") or entry.get("description") or "", 1200)
+        summary = clean(entry.get("summary") or entry.get("description") or "", 2400)
         articles.append(
             Article(
                 title=title,
@@ -176,7 +176,7 @@ def parse_json_items(raw: bytes, *, source_name: str, limit: int, spec: dict | N
         notes = [f"{key.rsplit(chr(46), 1)[-1]}={_dig(row, key)}" for key in facts if _dig(row, key) not in (None, "", False)]
         if notes:
             body = f"{body}（{', '.join(notes)}）" if body else ", ".join(notes)
-        body = clean(body, 1200)
+        body = clean(body, 2400)
         articles.append(
             Article(
                 title=title,
@@ -254,7 +254,7 @@ def search_source(source: Source, cfg: CollectionConfig) -> list[Article]:
             url=r.get("url", ""),
             source=r.get("source") or source.name,
             published=(r.get("published") or "")[:10],
-            raw_summary=clean(r.get("content", ""), 900),
+            raw_summary=clean(r.get("content", ""), 1600),
         )
         for r in results
         if r.get("url")

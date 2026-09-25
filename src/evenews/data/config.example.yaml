@@ -60,12 +60,15 @@ llm:
   timeout: 180
   retries: 2
   json_mode: true
-  max_output_tokens: 8000
-  batch_size: 8           # 一次给模型多少条候选；摘要变长了就调小一点
+  # 网关私有参数，原样并进请求体。推理型模型（Qwen3 / DeepSeek 等）可以试着关掉思考省一半输出：
+  # extra_body:
+  #   enable_thinking: false
+  max_output_tokens: 32000    # 单次输出上限。上下文大不代表能写很多：推理型模型的思考也算在这里
+  batch_size: 4           # 一次给模型多少条候选；条数越多每条可写的字数越少，也越容易被掐断
   tasks:                    # 哪些环节交给模型做；关掉则退化为规则处理
     select: true            # 筛选、排序、去重
     classify: true          # 判断条目属于哪个板块
-    summarize: true         # 生成 200-260 字综合介绍（发生了什么 + 关键数字 + 影响）
+    summarize: true         # 生成 300-400 字综合介绍（背景 + 发生了什么 + 关键数字 + 各方回应 + 影响）
     lead: true              # 写今日摘要导语
   # 可选：让模型自己联网检索补充信息（留空则只用下面的固定来源）
   search:

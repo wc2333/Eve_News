@@ -214,12 +214,13 @@ class LLMConfig:
     timeout: int = 180
     retries: int = 2
     json_mode: bool = True
-    max_output_tokens: int = 8000
+    max_output_tokens: int = 32000
     batch_size: int = 8
     proxy: str = ""
     tasks: dict = field(default_factory=dict)
     search: dict = field(default_factory=dict)
     headers: dict = field(default_factory=dict)
+    extra_body: dict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, raw: dict) -> "LLMConfig":
@@ -233,11 +234,12 @@ class LLMConfig:
             timeout=int(raw.get("timeout") or 180),
             retries=int(raw.get("retries") or 0),
             json_mode=bool(raw.get("json_mode", True)),
-            max_output_tokens=int(raw.get("max_output_tokens") or 8000),
+            max_output_tokens=int(raw.get("max_output_tokens") or 32000),
             batch_size=int(raw.get("batch_size") or 8),
             tasks=dict(raw.get("tasks") or {}),
             search=dict(raw.get("search") or {}),
             headers=dict(raw.get("headers") or {}),
+            extra_body=dict(raw.get("extra_body") or {}),
         )
 
     def task_on(self, name: str) -> bool:

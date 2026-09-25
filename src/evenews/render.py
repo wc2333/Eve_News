@@ -123,7 +123,7 @@ def build_context(digest: Digest, brand: Brand) -> dict[str, Any]:
                 "source": article.source,
                 "domain": article.domain,
                 "published": article.published,
-                "summary": article.summary or article.raw_summary[:130],
+                "summary": article.summary or article.raw_summary[:340],
                 "why": article.why,
                 "score_label": f"{article.score:.1f}" if article.score else "",
             }

@@ -129,11 +129,29 @@ llm:
   tasks:                        # 每个环节单独开关，关掉即退回规则处理
     select: true                # 打分、排序、去重、剔除营销稿
     classify: true              # 判断条目属于哪个板块
-    summarize: true             # 80-140 字中文摘要
+    summarize: true             # 每条 300-400 字综合介绍
     lead: true                  # 今日摘要导语
 ```
 
 任何 OpenAI 兼容网关都能直接用（`base_url` + `model` 决定一切）；本地模型填 `provider: ollama`、`base_url: http://127.0.0.1:11434`，不需要密钥；`provider: mock` 是内置的离线规则模型，用来验版式和跑单测。
+
+每条资讯的介绍目标 **300-400 字**（`evenews.curator.SUMMARY_CHARS`），要求写成一段连贯中文：背景 → 今天发生了什么 → 关键数字/参数/时间点 → 各方回应或对比数据 → 对我们的意义。为了让模型有料可写，来源正文最多留 2400 字（每次给模型读前 1200 字）。关掉 `tasks.summarize` 时走离线兜底：从 RSS 原文拼最多 9 句、约 360 字，不会退化成一句话。
+
+上限会按 `llm.max_output_tokens` 与本批条数自动收敛（`curator.summary_rule`），永远不向模型要它一轮写不完的量。注意**上下文 256K 不等于能写很多**：单次输出另有 `max_tokens` 上限，而且推理型模型（Qwen3、DeepSeek 推理模式等）的思考 token 也计在这里 —— 实测某网关只处理 2 条候选，`completion_tokens` 就 8938（其中 8466 是思考），8000 的上限必然被掐断，所以默认给到 `max_output_tokens: 32000`。真被掐断时不再整批作废：
+
+- 日志按 `finish_reason=length` 明确报「输出被掐断，调大 max_output_tokens 或调小 batch_size」；
+- 半截 JSON 里已经写完的条目照样收下（`llm.salvage_truncated`）；
+- 缺的条目自动拆小批再问一轮（`curator._collect`），补齐后每条仍是完整介绍，不会退成一行。
+
+默认不关思考：日报一天一次，慢慢跑没关系，模型想清楚再写出来的介绍明显更好。真想省时间可以用 `llm.extra_body`（原样并进请求体，多数网关支持关掉思考，实测同一批输出从 8938 降到 3787 token，长度不变、但分析深度会打折）：
+
+```yaml
+llm:
+  max_output_tokens: 32000   # 一天一次，宁可给足
+  batch_size: 4              # 批越小，每条能写的字数越多，也越不容易被掐断
+  # extra_body:              # 可选：只在这个任务赶时间时才考虑
+  #   enable_thinking: false
+```
 
 想让模型自己上网检索补充信息：
 
