@@ -22,6 +22,26 @@ class HttpError(Exception):
     pass
 
 
+NO_PROXY_WORDS = {"none", "direct", "off", "no"}
+PROXY_HINT = "（网络不通时试试 collection.proxy：填代理地址，或填 none 强制不走代理）"
+_OPENERS: dict[str, Any] = {}
+
+
+def opener_for(proxy: str | None):
+    """Empty means trust the environment; none/direct/off ignores proxies; otherwise use that proxy URL."""
+    key = (proxy or "").strip()
+    if key not in _OPENERS:
+        if key.lower() in NO_PROXY_WORDS:
+            built = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        elif key:
+            built = urllib.request.build_opener(urllib.request.ProxyHandler({"http": key, "https": key}))
+        else:
+            built = urllib.request.build_opener()
+        _OPENERS[key] = built
+    return _OPENERS[key]
+
+
+
 def _local_bytes(url: str) -> bytes | None:
     candidate = url[7:] if url.startswith("file://") else url
     if url.startswith(("http://", "https://")) or "://" in url:
@@ -38,6 +58,7 @@ def fetch_bytes(
     payload: Any = None,
     method: str | None = None,
     retries: int = 1,
+    proxy: str | None = None,
 ) -> bytes:
     if payload is None and method is None:
         cached = _local_bytes(url)
@@ -51,17 +72,20 @@ def fetch_bytes(
         request_headers.setdefault("Content-Type", "application/json")
     verb = method or ("POST" if body is not None else "GET")
 
+    opener = opener_for(proxy)
     last_error: Exception | None = None
     for attempt in range(max(1, retries + 1)):
         try:
             request = urllib.request.Request(url, data=body, headers=request_headers, method=verb)
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with opener.open(request, timeout=timeout) as response:
                 return response.read()
         except Exception as exc:  # noqa: BLE001 - normalised for every caller
             last_error = exc
             if attempt < retries:
                 time.sleep(1.5 * (attempt + 1))
     detail = getattr(last_error, "reason", None) or last_error
+    if proxy is None and isinstance(last_error, OSError) and not isinstance(last_error, urllib.error.HTTPError):
+        detail = f"{detail}{PROXY_HINT}"
     raise HttpError(f"{verb} {url} failed: {detail}") from last_error
 
 

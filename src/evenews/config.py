@@ -90,6 +90,12 @@ def _secret(mapping: dict, inline_key: str, env_key: str) -> str:
     return str(mapping.get(inline_key) or "")
 
 
+def _proxy(raw: dict) -> str:
+    """Empty = follow the environment; none = force a direct connection; anything else is a proxy URL."""
+    env_name = str(raw.get("proxy_env") or "EVE_NEWS_PROXY").strip()
+    return str(raw.get("proxy") or os.environ.get(env_name) or "").strip()
+
+
 def _source_pool(raw: Any) -> dict[str, dict]:
     """The source pool may be written as a mapping (name: {url}) or as a list of named dicts."""
     pool: dict[str, dict] = {}
@@ -202,6 +208,7 @@ class LLMConfig:
     json_mode: bool = True
     max_output_tokens: int = 4000
     batch_size: int = 20
+    proxy: str = ""
     tasks: dict = field(default_factory=dict)
     search: dict = field(default_factory=dict)
     headers: dict = field(default_factory=dict)
@@ -213,6 +220,7 @@ class LLMConfig:
             base_url=str(raw.get("base_url") or "").rstrip("/"),
             model=str(raw.get("model") or ""),
             api_key=_secret(raw, "api_key", "api_key_env"),
+            proxy=_proxy(raw),
             temperature=float(raw.get("temperature") or 0.2),
             timeout=int(raw.get("timeout") or 180),
             retries=int(raw.get("retries") or 0),
@@ -256,6 +264,8 @@ class CollectionConfig:
     exclude_keywords: list[str] = field(default_factory=list)
     dedupe_days: int = 10
     timeout: int = 25
+    retries: int = 1
+    proxy: str = ""
 
     @classmethod
     def from_dict(cls, raw: dict) -> "CollectionConfig":
@@ -268,6 +278,8 @@ class CollectionConfig:
             exclude_keywords=[str(x) for x in raw.get("exclude_keywords") or []],
             dedupe_days=int(raw.get("dedupe_days") or 10),
             timeout=int(raw.get("timeout") or 25),
+            retries=int(raw.get("retries") or 1),
+            proxy=_proxy(raw),
         )
 
 
@@ -301,9 +313,21 @@ class Config:
                     item = pool.get(ref)
                     if item is None:
                         raise ConfigError(f"板块 {entry['id']} 引用了未定义的来源: {ref}")
-                    resolved.append(Source(name=ref, url=str(item.get("url") or ""), type=str(item.get("type") or "rss"), headers=dict(item.get("headers") or {})))
+                    spec = {"name": ref, **item}
                 elif isinstance(ref, dict) and ref.get("url"):
-                    resolved.append(Source(name=str(ref.get("name") or ref["url"]), url=str(ref["url"]), type=str(ref.get("type") or "rss"), headers=dict(ref.get("headers") or {})))
+                    spec = {"name": str(ref.get("name") or ref["url"]), **ref}
+                else:
+                    continue
+                if not spec.get("enabled", True):
+                    continue
+                resolved.append(
+                    Source(
+                        name=str(spec["name"]),
+                        url=str(spec.get("url") or ""),
+                        type=str(spec.get("type") or "rss"),
+                        headers=dict(spec.get("headers") or {}),
+                    )
+                )
             sections.append(
                 Section(
                     id=str(entry["id"]),
@@ -388,6 +412,9 @@ class Config:
             issues += self.email.problems()
         if self.collection.mode not in {"feeds", "llm", "hybrid"}:
             issues.append("collection.mode 只能是 feeds / llm / hybrid")
+        for section in self.sections:
+            if section.enabled and not section.sources:
+                issues.append(f"板块 {section.id} 已启用但抓不到来源（检查 sources 里的 enabled 是否为 false）")
         return issues
 
     @property

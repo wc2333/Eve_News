@@ -1,5 +1,8 @@
 {{ brand.title }} · {{ date_cn }}
 {{ brand.kicker }} | {{ brand.classification }} | {{ digest.generated_at }}
+{% if digest.stats.get("demo") %}
+!! 离线演示：以下为内置样例内容，不是真实新闻。
+{% endif %}
 
 {% if digest.lead %}
 【今日摘要】

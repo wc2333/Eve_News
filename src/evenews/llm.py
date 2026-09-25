@@ -111,7 +111,7 @@ class OpenAIChat(BaseLLM):
         last_error: Exception | None = None
         for _ in range(len(optional_order) + 1):
             try:
-                data = fetch_json(self._endpoint(), payload=payload, headers=headers, timeout=self.cfg.timeout, retries=self.cfg.retries)
+                data = fetch_json(self._endpoint(), payload=payload, headers=headers, timeout=self.cfg.timeout, retries=self.cfg.retries, proxy=self.cfg.proxy or None)
                 choices = data.get("choices") or []
                 if not choices:
                     raise LLMError(f"{self.label} 返回里没有 choices")
@@ -143,7 +143,7 @@ class AnthropicChat(BaseLLM):
             **self.cfg.headers,
         }
         try:
-            data = fetch_json(f"{self.cfg.base_url}/messages", payload=payload, headers=headers, timeout=self.cfg.timeout, retries=self.cfg.retries)
+            data = fetch_json(f"{self.cfg.base_url}/messages", payload=payload, headers=headers, timeout=self.cfg.timeout, retries=self.cfg.retries, proxy=self.cfg.proxy or None)
         except HttpError as exc:
             raise LLMError(f"{self.label} 调用失败: {exc}") from exc
         parts = [block.get("text", "") for block in data.get("content", []) if isinstance(block, dict)]
@@ -164,7 +164,7 @@ class OllamaChat(BaseLLM):
             "format": "json" if self.cfg.json_mode else "",
         }
         try:
-            data = fetch_json(f"{self.cfg.base_url}/api/chat", payload=payload, timeout=self.cfg.timeout, retries=self.cfg.retries, headers=self.cfg.headers)
+            data = fetch_json(f"{self.cfg.base_url}/api/chat", payload=payload, timeout=self.cfg.timeout, retries=self.cfg.retries, headers=self.cfg.headers, proxy=self.cfg.proxy or None)
         except HttpError as exc:
             raise LLMError(f"{self.label} 调用失败: {exc}") from exc
         return (data.get("message") or {}).get("content", "")

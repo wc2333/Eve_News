@@ -17,7 +17,7 @@ import feedparser
 
 from .config import CollectionConfig
 from .models import Article, Section, Source
-from .net import fetch_bytes
+from .net import HttpError, fetch_bytes
 
 log = logging.getLogger("evenews.feeds")
 
@@ -59,6 +59,9 @@ def in_window(published: str, hours: int, now: datetime) -> bool:
 
 def parse_feed(raw: bytes, *, source_name: str, limit: int) -> list[Article]:
     parsed = feedparser.parse(raw)
+    head = raw[:600].lower()
+    if not parsed.entries and (b"<html" in head or b"<!doctype" in head):
+        raise HttpError(f"{source_name}: 返回的是网页而不是 feed，地址多半已失效或需要代理")
     articles: list[Article] = []
     for entry in parsed.entries:
         title = clean(entry.get("title", ""), 240)
@@ -103,7 +106,13 @@ def fetch_source(
         return []
     if source.type in {"rss", "atom", "feed", "file"} or fixture is not None:
         origin = str(fixture) if fixture is not None else source.url
-        raw = fetch_bytes(origin, timeout=cfg.timeout, headers=cfg.headers, retries=1)
+        raw = fetch_bytes(
+            origin,
+            timeout=cfg.timeout,
+            headers=cfg.headers,
+            retries=int(getattr(cfg, "retries", 1) or 1),
+            proxy=getattr(cfg, "proxy", "") or None,
+        )
         return parse_feed(raw, source_name=source.name, limit=cfg.per_source_limit)
     if source.type in {"search", "web"}:
         return search_source(source, cfg)
@@ -142,6 +151,7 @@ def search_source(source: Source, cfg: CollectionConfig) -> list[Article]:
 class Harvest:
     by_section: dict[str, list[Article]] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
     fetched: int = 0
     sources_used: list[Source] = field(default_factory=list)
 
@@ -174,20 +184,28 @@ def harvest(
 
     harvest_result = Harvest(sources_used=list(by_key.values()))
 
-    def load(key: str) -> tuple[str, list[Article]]:
-        return key, fetch_source(by_key[key], cfg, fixtures_dir=fixtures_dir, fixtures_only=fixtures_only)
+    def load(key: str) -> tuple[str, list[Article], str]:
+        try:
+            return key, fetch_source(by_key[key], cfg, fixtures_dir=fixtures_dir, fixtures_only=fixtures_only), ""
+        except Exception as exc:  # noqa: BLE001 - one unreachable source must not sink the whole brief
+            log.warning("来源抓取失败 [%s]: %s", by_key[key].name, exc)
+            return key, [], str(exc)
 
-    results: dict[str, list[Article]] = {}
+    results: dict[str, tuple[list[Article], str]] = {}
     if by_key:
         with ThreadPoolExecutor(max_workers=min(max_workers, len(by_key))) as pool:
-            for key, articles in pool.map(load, list(by_key)):
-                results[key] = articles
+            for key, articles, error in pool.map(load, list(by_key)):
+                results[key] = (articles, error)
 
-    for key, articles in results.items():
-        if not articles:
+    for key, (articles, error) in results.items():
+        if error:
+            harvest_result.errors.append(f"{by_key[key].name}: {error}")
+            harvest_result.failed.append(by_key[key].name)
+        elif not articles:
             if fixtures_only and fixture_path(fixtures_dir, by_key[key]) is None:
                 continue
             harvest_result.errors.append(f"{by_key[key].name}: 没有取到条目")
+            harvest_result.failed.append(by_key[key].name)
         harvest_result.fetched += len(articles)
         for section_id in owners[key]:
             harvest_result.by_section.setdefault(section_id, [])

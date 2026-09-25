@@ -92,13 +92,16 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:#fff
   </div>
   <div class="card">
     <h2>来源与过滤</h2>
-    <p class="hint">mode 决定要不要让模型自己联网检索；require_keywords 是「和 AI 有关」的门槛，exclude_keywords 直接丢弃。</p>
+    <p class="hint">mode 决定要不要让模型自己联网检索；require_keywords 是「和 AI 有关」的门槛，exclude_keywords 直接丢弃。</p>    <p class="hint">想更快看到当天的新闻：mode 选 <code>hybrid</code> 并配 <code>search.provider</code>（模型现查），来源超时就显式填 <code>proxy</code> 或写 <code>none</code> 强制直连；坏源在「高级 YAML」里加 <code>enabled: false</code> 停用。</p>
     <div class="grid2">
       <div class="row"><label>collection.mode</label><select data-path="collection.mode">
         <option>feeds</option><option>llm</option><option>hybrid</option></select></div>
       <div class="row"><label>lookback_hours</label><input type="number" data-path="collection.lookback_hours"></div>
       <div class="row"><label>per_source_limit</label><input type="number" data-path="collection.per_source_limit"></div>
-      <div class="row"><label>dedupe_days</label><input type="number" data-path="collection.dedupe_days"></div>
+      <div class="row"><label>dedupe_days</label><input type="number" data-path="collection.dedupe_days"></div>      <div class="row"><label>timeout</label><input type="number" data-path="collection.timeout"></div>
+      <div class="row"><label>retries</label><input type="number" data-path="collection.retries"></div>
+      <div class="row"><label>代理 proxy</label><input type="text" placeholder="留空=跟随系统；none=不走代理" data-path="collection.proxy"></div>
+      <div class="row"><label>模型 proxy</label><input type="text" placeholder="留空=跟随系统；none=不走代理" data-path="llm.proxy"></div>
       <div class="row"><label>search.provider</label><select data-path="llm.search.provider">
         <option>none</option><option>tavily</option><option>serper</option></select></div>
       <div class="row"><label>检索词/板块</label><input type="number" data-path="llm.search.queries_per_section"></div>
@@ -176,6 +179,7 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:#fff
       <button class="act" data-action="preview">生成今天的预览（不发信）</button>
       <button class="act primary" data-action="send">立即生成并发送</button>
     </div>
+    <p class="hint">「离线试跑」跑的是内置样例（<code>src/evenews/sample/feeds</code>），只用来验版式，出来的内容不是真实新闻；真实内容点「生成今天的预览」。</p>
     <pre class="out" id="runOut">还没有运行记录。</pre>
   </div>
   <div class="card">

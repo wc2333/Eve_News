@@ -34,6 +34,8 @@ class RunReport:
     subject: str = ""
     recipients: list[str] = field(default_factory=list)
     sent: bool = False
+    demo: bool = False
+    failed_sources: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
@@ -45,6 +47,10 @@ class RunReport:
         ]
         if self.files:
             parts.append(f"输出 {self.files.get('html')}")
+        if self.demo:
+            parts.insert(1, "演示数据（内置样例，非真实新闻）")
+        if self.failed_sources:
+            parts.append(f"失败来源 {len(self.failed_sources)} 个")
         parts.append("已发送 → " + ", ".join(self.recipients) if self.sent else "未发送")
         return " | ".join(parts)
 
@@ -101,6 +107,7 @@ def run_once(
         fixtures = Path(fixtures) if fixtures else SAMPLE_FEEDS
         config.collection.lookback_hours = 0
         log.info("离线演示模式：使用 mock 模型 + 样例来源 %s", fixtures)
+    demo = fixtures is not None
     llm = build_llm(config.llm)
     if config.collection.mode in {"llm", "hybrid"}:
         sections = attach_search_sources(sections, llm, config)
@@ -134,6 +141,8 @@ def run_once(
             "sources": len(collected.sources_used),
             "fetched": collected.fetched,
             "candidates": len(collected.candidates),
+            "failed_sources": collected.failed,
+            "demo": demo,
         },
     )
     digest.lead = write_lead(llm, config.llm, digest)
@@ -141,6 +150,8 @@ def run_once(
     target_root = Path(out_root) if out_root else config.out_root / run_date
     files = write_outputs(digest, config.brand, target_root)
     subject = subject_for(digest, config.brand, config.email.subject_template, config.email.subject_prefix)
+    if demo:
+        subject = f"[演示] {subject}"
 
     html = files["html"].read_text(encoding="utf-8") if files["html"].is_file() else render_html(digest, config.brand)
     text = render_text(digest, config.brand)
@@ -153,6 +164,8 @@ def run_once(
         files=files,
         subject=subject,
         errors=list(collected.errors),
+        demo=demo,
+        failed_sources=list(collected.failed),
     )
 
     if send and config.email.enabled:

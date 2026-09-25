@@ -102,3 +102,11 @@ def test_email_message_is_multipart(config):
     message = build_message(config.email, subject="s", html="<p>hi</p>", text="hi")
     assert message.get_content_type() == "multipart/alternative"
     assert "team@test" in message["To"]
+
+def test_offline_run_is_clearly_marked_as_demo(config, fixtures_dir, tmp_path):
+    report = run_once(config, when="2026-09-25", offline=True, fixtures=fixtures_dir, send=False, out_root=tmp_path / "out")
+    assert report.demo is True and report.subject.startswith("[演示]")
+    assert "演示数据" in report.summary()
+    html = report.files["html"].read_text(encoding="utf-8")
+    assert "不是真实新闻" in html
+    assert "离线演示" in report.files["text"].read_text(encoding="utf-8")

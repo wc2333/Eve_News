@@ -36,11 +36,15 @@ def similar(left: str, right: str) -> bool:
     return overlap >= 0.72
 
 
-def rule_score(article: Article, hits: list[str]) -> float:
+def rule_score(article: Article, hits: list[str], run_date: str = "") -> float:
     digits = len(re.findall(r"\d", article.title))
     score = 0.35 + 0.1 * min(len(hits), 4) + 0.02 * min(digits, 5)
     if not article.published:
         score -= 0.05
+    elif run_date and article.published >= run_date:
+        score += 0.08  # 今天发生的往上抬
+    elif run_date:
+        score -= 0.06  # 昨天的往下压，别让旧闻占版面
     return round(min(score, 0.9), 3)
 
 
@@ -127,7 +131,7 @@ def curate_section(
             continue
         hits = article.keywords or section.keyword_hits(article.title, article.raw_summary)
         article.keywords = hits
-        kept.append((article, rule_score(article, hits)))
+        kept.append((article, rule_score(article, hits, run_date)))
 
     kept.sort(key=lambda pair: pair[1], reverse=True)
     pool = kept[: max(section.max_items * 3, llm_cfg.batch_size)]

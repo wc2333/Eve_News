@@ -26,6 +26,12 @@
     </tr>
   </table>
 
+  {% if digest.stats.get("demo") %}
+  <div style="margin:18px 0 0;padding:11px 15px;background:#fcecea;border:1px solid #e9b7b1;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;line-height:1.7;color:#8a2415;">
+    离线演示：本期内容来自内置样例（src/evenews/sample/feeds），<b>不是真实新闻</b>。正式使用请在设置页点「生成今天的预览」或「立即生成并发送」。
+  </div>
+  {% endif %}
+
   {% if digest.lead %}
   <div style="margin:26px 0 8px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:2px;color:{{ brand.label }};">今日摘要 · TODAY</div>
   <div style="background:#efeadf;border-left:3px solid {{ brand.accent }};padding:14px 16px;font-family:'Songti SC','SimSun',Georgia,serif;font-size:15px;line-height:1.85;color:{{ brand.text }};">{{ digest.lead }}</div>
@@ -84,6 +90,12 @@
       {% endfor %}
     </table>
   </div>
+
+  {% if digest.stats.get("failed_sources") %}
+  <div style="margin-top:14px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#b5716c;">
+    本期 {{ digest.stats.sources }} 个来源中有 {{ digest.stats.failed_sources | length }} 个没抓到：{{ digest.stats.failed_sources | join('、') }}
+  </div>
+  {% endif %}
 
   <div style="margin-top:26px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#a2a6ac;">
     {{ brand.title }} · {{ brand.footer_note }}{% if brand.company %} · {{ brand.company }}{% endif %}

@@ -30,6 +30,7 @@ class SearchConfig:
     max_results: int = 12
     queries_per_section: int = 2
     timeout: int = 30
+    proxy: str = ""
     headers: dict = field(default_factory=dict)
 
     @classmethod
@@ -39,6 +40,7 @@ class SearchConfig:
         api_key = api_key or str(raw.get("api_key") or "")
         return cls(
             provider=str(raw.get("provider") or "none").lower(),
+            proxy=str(raw.get("proxy") or os.environ.get("EVE_NEWS_PROXY") or "").strip(),
             api_key=api_key,
             endpoint=str(raw.get("endpoint") or "").rstrip("/"),
             region=str(raw.get("region") or "cn"),
@@ -83,7 +85,7 @@ def run_search(query: str, cfg: SearchConfig, *, limit: int = 12) -> list[dict]:
                 "include_answer": False,
             }
             headers = {"Authorization": f"Bearer {cfg.api_key}", **cfg.headers}
-            data = fetch_json(endpoint, payload=payload, headers=headers, timeout=cfg.timeout)
+            data = fetch_json(endpoint, payload=payload, headers=headers, timeout=cfg.timeout, proxy=cfg.proxy or None)
             rows = data.get("results") or []
             return [
                 {
@@ -104,7 +106,7 @@ def run_search(query: str, cfg: SearchConfig, *, limit: int = 12) -> list[dict]:
                 "tbs": "qdr:d" if cfg.days <= 1 else f"qdr:w",
             }
             headers = {"X-API-KEY": cfg.api_key, **cfg.headers}
-            data = fetch_json(endpoint, payload=payload, headers=headers, timeout=cfg.timeout)
+            data = fetch_json(endpoint, payload=payload, headers=headers, timeout=cfg.timeout, proxy=cfg.proxy or None)
             rows = data.get("organic") or []
             return [
                 {

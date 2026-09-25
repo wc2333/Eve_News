@@ -72,12 +72,15 @@ collection:
   per_source_limit: 30      # 每个来源最多取多少条
   dedupe_days: 10           # 多少天内不重复推送同一篇
   timeout: 25
+  retries: 1              # 单个来源失败后重试几次
+  proxy: ""                 # 留空=跟随系统代理；none=强制不走代理；也可填 http://127.0.0.1:7890
   headers:
     Accept-Language: zh-CN,zh;q=0.9,en;q=0.6
   require_keywords: [AI, ai, 人工智能, 大模型, 大语言模型, LLM, GPT, Agent, 智能体, 算力, 芯片, 机器人, AIGC, 机器学习, 深度学习, 神经网络, 训练, 推理, 多模态, GPU, HBM, 英伟达, OpenAI, Anthropic, DeepSeek, Qwen, Claude, Gemini, Llama]
   exclude_keywords: [招聘, 征文, 抽奖, 广告, 促销, 课程优惠, 直播预约]
 
 # 来源池：板块里按名字引用即可，避免重复配置
+# 某个来源老超时（境外源常见），加 enabled: false 先停用，不用删掉整段
 sources:
   ithome:
     url: https://www.ithome.com/rss/
@@ -85,12 +88,14 @@ sources:
     url: https://www.qbitai.com/feed
   jiqizhixin:
     url: https://www.jiqizhixin.com/rss
+    enabled: false           # 实测返回网页 HTML，官方 RSS 已停更
   leiphone:
     url: https://www.leiphone.com/feed
   ifanr:
     url: https://www.ifanr.com/feed
   36kr:
     url: https://36kr.com/feed
+    enabled: false           # 实测返回网页 HTML，公开 RSS 已失效
   huxiu:
     url: https://www.huxiu.com/rss/0.xml
   sspai:
@@ -99,6 +104,7 @@ sources:
     url: https://www.infoq.cn/feed
   semi:
     url: http://www.semi.org.cn/feed
+    enabled: false           # 实测 404，先停用；能访问时删掉本行即可
   huggingface:
     url: https://huggingface.co/blog/feed.xml
   openai:
@@ -109,6 +115,16 @@ sources:
     url: https://rss.arxiv.org/rss/cs.CL
   arxiv_lg:
     url: https://rss.arxiv.org/rss/cs.LG
+  oschina:
+    url: https://www.oschina.net/news/rss     # 开源中国：国产开源与工具动态
+  solidot:
+    url: https://www.solidot.org/index.rss    # Solidot：科技短讯，更新很勤
+  geekpark:
+    url: https://www.geekpark.net/rss         # 极客公园：硬件与产品
+  tmtpost:
+    url: https://www.tmtpost.com/feed         # 钛媒体：产业与融资，当天出稿
+  juejin:
+    url: https://juejin.cn/rss                # 掘金：工程与模型实践
 
 # 6 个板块，enabled: false 即不采集也不推送；也可用 evenews enable/disable 切换
 sections:
@@ -117,7 +133,7 @@ sections:
     description: 模型发布、评测榜单、开源权重、API 价格与开发者生态
     enabled: true
     max_items: 6
-    sources: [jiqizhixin, qbitai, huggingface, openai, arxiv_cl, infoq]
+    sources: [qbitai, huggingface, openai, arxiv_cl, infoq, oschina, juejin]
     extra_prompt: 优先模型发布、能力评测、开源权重与价格变化；给出关键数字（参数量、价格、榜单名次）。
     keywords: [大模型, 开源, 权重, 发布, 模型, LLM, GPT, Qwen, 通义, DeepSeek, Kimi, GLM, 文心, 豆包, 混元, Claude, Gemini, Llama, Mistral, HuggingFace, 微调, 蒸馏, 多模态, MoE, 上下文, 推理模型]
 
@@ -126,7 +142,7 @@ sections:
     description: 手机/PC 端侧模型、峰会发布、算法备案与合规
     enabled: true
     max_items: 5
-    sources: [ithome, ifanr, qbitai, leiphone]
+    sources: [ithome, ifanr, qbitai, leiphone, google_ai, solidot]
     extra_prompt: 关注端侧/终端 AI 能力、峰会发布、国内备案与合规进展。
     keywords: [端侧, 终端, 手机, 高通, 骁龙, 联发科, 天玑, 苹果, iOS, 鸿蒙, 小米, OPPO, vivo, 备案, NPU, 边缘, 小模型, 量化, 离线, 端云]
 
@@ -135,7 +151,7 @@ sections:
     description: 国产 GPU/NPU、智算中心、超节点集群与供应链
     enabled: true
     max_items: 5
-    sources: [semi, 36kr, qbitai, ithome, arxiv_lg]
+    sources: [semi, 36kr, qbitai, ithome, arxiv_lg, infoq, tmtpost]
     extra_prompt: 关注国产芯片性能数据、智算中心建设、集群规模与供应链变化。
     keywords: [国产算力, 华为, 昇腾, 寒武纪, 海光, 壁仞, 摩尔线程, 燧原, 沐曦, 天数智芯, 超节点, 智算中心, 算力, 集群, 液冷, 光模块, HBM, CoWoS, 先进制程, 服务器]
 
@@ -144,7 +160,7 @@ sections:
     description: 机器人、自动驾驶、AI 硬件与具身智能进展
     enabled: true
     max_items: 5
-    sources: [ithome, ifanr, leiphone, 36kr]
+    sources: [ithome, ifanr, leiphone, 36kr, geekpark, tmtpost]
     extra_prompt: 关注人形机器人/机器狗、自动驾驶、AI 硬件的量产与落地数据。
     keywords: [具身智能, 机器人, 人形机器人, 机器狗, 机械臂, 自动驾驶, 智驾, 座舱, 无人机, 智能硬件, AI PC, 眼镜, 耳机, 传感器, 灵巧手, 大模型机器人]
 
@@ -153,7 +169,7 @@ sections:
     description: AI 眼镜、头显、手表耳机等可穿戴新形态
     enabled: true
     max_items: 4
-    sources: [ifanr, ithome, sspai, huxiu]
+    sources: [ifanr, ithome, sspai, huxiu, geekpark]
     extra_prompt: 关注 AI 眼镜/头显/手表的销量、供应链与新交互形态。
     keywords: [智能眼镜, AI 眼镜, 眼镜, AR, MR, VR, 头显, 手表, 手环, 耳机, 戒指, 吊坠, 可穿戴, Ray-Ban, Meta, 摄像头, 麦克风]
 
@@ -162,6 +178,6 @@ sections:
     description: 融资并购、财报产能、政策监管与算力经济学
     enabled: true
     max_items: 5
-    sources: [36kr, huxiu, qbitai, infoq]
+    sources: [36kr, huxiu, qbitai, infoq, tmtpost, solidot]
     extra_prompt: 关注融资估值、商业化收入、Token/算力成本与政策监管。
     keywords: [融资, 估值, IPO, 上市, 投资, 并购, 财报, 营收, 毛利, 涨价, 降价, 产能, 出货量, 政策, 监管, 备案, Token 工厂, 商业化, 市场规模]
