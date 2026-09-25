@@ -53,12 +53,12 @@ llm:
   timeout: 180
   retries: 2
   json_mode: true
-  max_output_tokens: 4000
-  batch_size: 18
+  max_output_tokens: 8000
+  batch_size: 8           # 一次给模型多少条候选；摘要变长了就调小一点
   tasks:                    # 哪些环节交给模型做；关掉则退化为规则处理
     select: true            # 筛选、排序、去重
     classify: true          # 判断条目属于哪个板块
-    summarize: true         # 生成 80-140 字中文摘要
+    summarize: true         # 生成 200-260 字综合介绍（发生了什么 + 关键数字 + 影响）
     lead: true              # 写今日摘要导语
   # 可选：让模型自己联网检索补充信息（留空则只用下面的固定来源）
   search:
@@ -77,9 +77,10 @@ collection:
   headers:
     Accept-Language: zh-CN,zh;q=0.9,en;q=0.6
   require_keywords: [AI, ai, 人工智能, 大模型, 大语言模型, LLM, GPT, Agent, 智能体, 算力, 芯片, 机器人, AIGC, 机器学习, 深度学习, 神经网络, 训练, 推理, 多模态, GPU, HBM, 英伟达, OpenAI, Anthropic, DeepSeek, Qwen, Claude, Gemini, Llama]
-  exclude_keywords: [招聘, 征文, 抽奖, 广告, 促销, 课程优惠, 直播预约]
+  exclude_keywords: [招聘, 征文, 抽奖, 广告, 促销, 课程优惠, 直播预约, 新玩意, 好物, 开箱, 购物清单]
 
 # 来源池：板块里按名字引用即可，避免重复配置
+# 单个来源想单独放宽/收紧时间窗，就在来源里加 lookback_hours（小时），不写则跟 collection.lookback_hours
 # 某个来源老超时（境外源常见），加 enabled: false 先停用，不用删掉整段
 sources:
   ithome:
@@ -101,6 +102,7 @@ sources:
     enabled: false           # 实测两次都读超时，先停用；想用就改成 enabled: true
   sspai:
     url: https://sspai.com/feed
+    enabled: false           # 个人向分享为主，按需求不抓
   infoq:
     url: https://www.infoq.cn/feed
   semi:
@@ -108,8 +110,32 @@ sources:
     enabled: false           # 实测 404，先停用；能访问时改成 enabled: true
   huggingface:
     url: https://huggingface.co/blog/feed.xml
+    enabled: false           # 境内直连不稳，改用魔搭 modelscope；能走代理时改 enabled: true
   openai:
     url: https://openai.com/news/rss.xml
+  modelscope:
+    url: https://modelscope.cn/api/v1/articles?PageSize=30
+    type: json                    # JSON 接口也能当来源：用下面的 json 映射成条目
+    json:
+      items: Data.Articles        # 数组在返回 JSON 里的位置
+      title: Title
+      summary: [Desc, TitleDesc]  # 依次取第一个非空的摘要字段
+      url: [ContentUrl, Url]
+      date: GmtPublished          # 支持秒级时间戳或日期字符串
+      base_url: https://modelscope.cn
+      require: [IsPGC]            # 只留平台/机构发布的内容，个人帖不抓
+  hf_trending:
+    url: https://hf-mirror.com/api/models?sort=trendingScore&direction=-1&limit=30
+    type: json                    # HuggingFace 官方 API 境内不通，走 hf-mirror 镜像，直连即可
+    lookback_hours: 336           # 本来源单独放宽到 14 天：模型上榜往往比发布晚几天
+    json:
+      title: modelId              # 例：Qwen/Qwen-Image-2.1
+      url: [modelId]
+      base_url: https://hf-mirror.com
+      date: createdAt
+      summary: [tags]             # 接口没有正文，就把 tags 当材料给模型
+      facts: [pipeline_tag, library_name, likes, downloads, trendingScore]
+      require: [likes>=30, trendingScore>=1]   # 只要新且有热度的模型，个人练手仓库自动过滤
   google_ai:
     url: https://blog.google/technology/ai/rss/
   arxiv_cl:
@@ -125,7 +151,8 @@ sources:
   tmtpost:
     url: https://www.tmtpost.com/feed         # 钛媒体：产业与融资，当天出稿
   juejin:
-    url: https://juejin.cn/rss                # 掘金：工程与模型实践
+    url: https://juejin.cn/rss                # 掘金社区：以个人博客为主，按需求不抓
+    enabled: false
 
 # 6 个板块，enabled: false 即不采集也不推送；也可用 evenews enable/disable 切换
 sections:
@@ -134,9 +161,19 @@ sections:
     description: 模型发布、评测榜单、开源权重、API 价格与开发者生态
     enabled: true
     max_items: 6
-    sources: [qbitai, huggingface, openai, arxiv_cl, infoq, oschina, juejin]
+    sources: [qbitai, modelscope, hf_trending, openai, arxiv_cl, infoq, oschina]
     extra_prompt: 优先模型发布、能力评测、开源权重与价格变化；给出关键数字（参数量、价格、榜单名次）。
     keywords: [大模型, 开源, 权重, 发布, 模型, LLM, GPT, Qwen, 通义, DeepSeek, Kimi, GLM, 文心, 豆包, 混元, Claude, Gemini, Llama, Mistral, HuggingFace, 微调, 蒸馏, 多模态, MoE, 上下文, 推理模型]
+
+
+  - id: model_releases
+    title: 新模型与开源权重速览
+    description: 近期上榜的新模型与开源权重（按热度排序，个人练手仓库不抓）
+    enabled: true
+    max_items: 4
+    sources: [hf_trending, modelscope]
+    extra_prompt: 每条讲清楚模型是什么、谁发布的、参数或能力规模、许可证与能不能本地部署；材料里没有的指标不要评价、不要编。
+    keywords: [模型, 权重, 开源, 发布, LLM, Qwen, DeepSeek, Llama, GGUF, 多模态, 推理, 微调, MoE, safetensors, diffusers]
 
   - id: edge_ai
     title: 端侧 AI 与芯片峰会
@@ -152,7 +189,7 @@ sections:
     description: 国产 GPU/NPU、智算中心、超节点集群与供应链
     enabled: true
     max_items: 5
-    sources: [semi, 36kr, qbitai, ithome, arxiv_lg, infoq, tmtpost]
+    sources: [semi, 36kr, qbitai, modelscope, ithome, arxiv_lg, infoq, tmtpost]
     extra_prompt: 关注国产芯片性能数据、智算中心建设、集群规模与供应链变化。
     keywords: [国产算力, 华为, 昇腾, 寒武纪, 海光, 壁仞, 摩尔线程, 燧原, 沐曦, 天数智芯, 超节点, 智算中心, 算力, 集群, 液冷, 光模块, HBM, CoWoS, 先进制程, 服务器]
 

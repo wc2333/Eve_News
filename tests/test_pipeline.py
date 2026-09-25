@@ -95,7 +95,9 @@ def test_real_run_records_history_without_sending(config, fixtures_dir):
     history = json.loads(state_file.read_text(encoding="utf-8"))
     assert history["runs"][0]["run_date"] == "2026-09-25"
     rerun = run_once(config, when="2026-09-25", offline=False, fixtures=fixtures_dir, send=False)
-    assert rerun.items < report.items  # already published stories are skipped
+    assert rerun.items == report.items  # a same-day rerun is not starved by dedupe
+    next_day = run_once(config, when="2026-09-26", offline=False, fixtures=fixtures_dir, send=False)
+    assert next_day.items < report.items  # yesterday's stories are skipped
 
 
 def test_email_message_is_multipart(config):
@@ -110,3 +112,127 @@ def test_offline_run_is_clearly_marked_as_demo(config, fixtures_dir, tmp_path):
     html = report.files["html"].read_text(encoding="utf-8")
     assert "不是真实新闻" in html
     assert "离线演示" in report.files["text"].read_text(encoding="utf-8")
+
+from evenews import pipeline as pipeline_module
+from evenews.config import Brand, Config
+from evenews.curator import plain_summary
+from evenews.models import Digest, Section, SectionDigest
+from evenews.render import render_html, render_markdown, render_text
+
+BRAND = Brand(company="测试公司", title="AI 每日资讯")
+
+
+def _section(index: int, title: str) -> Section:
+    return Section(id=f"s{index}", title=title, sources=[], max_items=3)
+
+
+def _article(title: str, url: str) -> Article:
+    return Article(
+        title=title,
+        url=url,
+        source="qbitai",
+        published="2026-09-25",
+        raw_summary="量子位报道了这次发布的内容，包含参数与时间点。",
+        summary="模型开放了权重，配套评测与部署文档一并放出。",
+    )
+
+
+def _digest(sections: list[SectionDigest]) -> Digest:
+    return Digest(
+        run_date="2026-09-25",
+        generated_at="2026-09-25T09:00:00+08:00",
+        timezone="Asia/Shanghai",
+        lead="今日头条。",
+        sections=sections,
+    )
+
+
+def test_a_section_with_no_items_is_not_printed():
+    digest = _digest(
+        [
+            SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")]),
+            SectionDigest(_section(2, "空掉的板块"), []),
+            SectionDigest(_section(3, "算力与芯片"), [_article("芯片流片", "https://c/3")]),
+        ]
+    )
+    for render in (render_html, render_markdown, render_text):
+        page = render(digest, BRAND)
+        assert "空掉的板块" not in page
+        assert "没有筛选出符合条件" not in page
+        assert "第 2 版 算力与芯片" in page or "算力与芯片（第 2 版）" in page or "第 2 版" in page
+
+
+def test_an_issue_without_items_is_never_mailed(raw_config: dict, tmp_path, fixtures_dir, monkeypatch):
+    raw = deepcopy(raw_config)
+    raw["email"]["enabled"] = True
+    raw["collection"]["require_keywords"] = ["绝不可能出现在样例里的词"]
+    cfg = Config.from_dict(raw, tmp_path / "empty.yaml")
+    calls: list = []
+    monkeypatch.setattr(pipeline_module, "send_digest", lambda *args, **kwargs: calls.append(1) or ["team@test"])
+
+    report = pipeline_module.run_once(cfg, when="2026-09-25", offline=False, fixtures=fixtures_dir, send=True)
+    assert report.items == 0
+    assert report.sent is False and not calls, "nothing to read, nothing to mail"
+    assert any("入选条目" in error for error in report.errors)
+
+
+def test_a_normal_issue_is_mailed(raw_config: dict, tmp_path, fixtures_dir, monkeypatch):
+    raw = deepcopy(raw_config)
+    raw["email"]["enabled"] = True
+    cfg = Config.from_dict(raw, tmp_path / "ok.yaml")
+    calls: list = []
+    monkeypatch.setattr(pipeline_module, "send_digest", lambda *args, **kwargs: calls.append(1) or ["team@test"])
+
+    report = pipeline_module.run_once(cfg, when="2026-09-25", offline=False, fixtures=fixtures_dir, send=True)
+    assert report.items > 0 and report.sent and len(calls) == 1
+
+
+def test_fallback_blurb_reads_as_a_whole_paragraph():
+    article = Article(
+        title="某模型发布",
+        url="https://a/1",
+        source="qbitai",
+        raw_summary=(
+            "公司在今日的技术发布会上正式公开了新一代开源模型，模型参数规模为 2350 亿，激活参数 210 亿。"
+            "上下文窗口长度由原先的 32K 扩展到 128K，长文档检索的召回率提升约 18 个百分点。"
+            "官方同时放出了基础权重、指令微调权重和一套量化版本，全部采用 Apache 2.0 许可。"
+            "配套技术报告披露了训练数据配比与对齐流程，评测集覆盖数学、代码与多语言三大类共 42 个子任务。"
+            "开发者在消费级显卡上即可完成 32K 上下文的本地部署，推理成本较上一代下降约三分之一。"
+            "该模型已同步进入官方托管的推理服务，企业可以按 token 计费直接调用。"
+        ),
+    )
+    blurb = plain_summary(article)
+    assert len(blurb) > 130, "the offline fallback must not be a one-liner anymore"
+
+
+def test_the_model_is_asked_for_a_longer_analysis(config, fixtures_dir):
+    from evenews.config import Config
+
+    recorded: list = []
+
+    class Recorder(MockLLM):
+        def json_task(self, task, payload):
+            recorded.append(json.dumps({"task": task, **payload}, ensure_ascii=False))
+            return super().json_task(task, payload)
+
+    section = config.sections[0]
+    collected = harvest([section], config.collection, now=NOW, fixtures_dir=fixtures_dir)
+    curate_section(
+        section,
+        collected.by_section[section.id],
+        llm=Recorder(config.llm),
+        collection=config.collection,
+        llm_cfg=config.llm,
+        run_date="2026-09-25",
+    )
+    assert recorded, "the curator must actually consult the model"
+    assert any("200-260" in call for call in recorded), "the brief asks for a long analysis"
+
+
+def test_history_dedupe_only_clears_older_days(tmp_path):
+    store = StateStore(tmp_path / "state.json")
+    store.mark_seen(["abc123"], "2026-09-25")
+    assert store.seen_before("abc123", "2026-09-15", "2026-09-25") is False, "a rerun today must still see it"
+    assert store.seen_before("abc123", "2026-09-15", "2026-09-26") is True, "yesterdays brief must not repeat it"
+    assert store.seen_before("abc123", "2026-09-26") is False, "outside the dedupe window"
+    assert store.seen_before("unknown", "2026-09-15", "2026-09-26") is False

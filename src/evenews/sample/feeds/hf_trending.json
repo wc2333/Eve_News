@@ -1,0 +1,48 @@
+[
+  {
+    "modelId": "example-org/Demo-V4-32B",
+    "createdAt": "2026-09-25T01:20:00.000Z",
+    "likes": 1820,
+    "downloads": 96400,
+    "trendingScore": 940,
+    "pipeline_tag": "text-generation",
+    "library_name": "transformers",
+    "tags": [
+      "safetensors",
+      "demo-data",
+      "qwen",
+      "text-generation",
+      "conversational",
+      "license:apache-2.0"
+    ]
+  },
+  {
+    "modelId": "example-lab/Demo-Vision-7B",
+    "createdAt": "2026-09-24T11:05:00.000Z",
+    "likes": 640,
+    "downloads": 21300,
+    "trendingScore": 380,
+    "pipeline_tag": "image-text-to-text",
+    "library_name": "transformers",
+    "tags": [
+      "safetensors",
+      "demo-data",
+      "multimodal",
+      "ocr",
+      "license:apache-2.0"
+    ]
+  },
+  {
+    "modelId": "someone-demo/weekend-sandbox",
+    "createdAt": "2026-09-25T06:40:00.000Z",
+    "likes": 1,
+    "downloads": 3,
+    "trendingScore": 0,
+    "pipeline_tag": "text-generation",
+    "library_name": "pytorch",
+    "tags": [
+      "demo-data",
+      "pytorch"
+    ]
+  }
+]

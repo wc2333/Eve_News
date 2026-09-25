@@ -7,8 +7,9 @@ from evenews.config import Config, ConfigError, default_config_text
 
 def test_example_config_is_loadable(tmp_path):
     config = Config.from_dict({}, tmp_path / "config.yaml")
-    assert [section.id for section in config.sections][:6] == [
+    assert [section.id for section in config.sections] == [
         "llm_oss",
+        "model_releases",
         "edge_ai",
         "domestic_compute",
         "devices_robotics",

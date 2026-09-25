@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import urllib.request
 from copy import deepcopy
 from datetime import datetime
@@ -138,3 +139,154 @@ def test_a_declared_source_overrides_the_disabled_default(raw_config: dict, tmp_
     raw["sources"]["huxiu"]["enabled"] = False
     opted_out = [source.name for source in Config.from_dict(raw, tmp_path / "b.yaml").sections[0].sources]
     assert "huxiu" not in opted_out
+
+
+MODELSCOPE_FIXTURE = (
+    '{\n'
+    '  "Data": {\n'
+    '    "Articles": [\n'
+    '      {"Title": "Qwen3.5 开源 27B 权重", "Desc": "同步放出推理与量化版本", "GmtPublished": 1758729600,'
+    ' "IsPGC": true, "ContentUrl": "/collections/qwen35"},\n'
+    '      {"Title": "我的个人随笔", "Desc": "日常记录", "GmtPublished": 1758729600,'
+    ' "IsPGC": false, "ContentUrl": "/posts/private"}\n'
+    '    ]\n'
+    '  }\n'
+    '}'.encode("utf-8")
+)
+
+MODELSCOPE_SPEC = {
+    "items": "Data.Articles",
+    "title": "Title",
+    "summary": ["Desc"],
+    "url": ["ContentUrl", "Url"],
+    "date": "GmtPublished",
+    "base_url": "https://modelscope.cn",
+    "require": ["IsPGC"],
+}
+
+
+def test_json_source_maps_the_api_and_drops_personal_posts():
+    items = feeds.parse_json_items(MODELSCOPE_FIXTURE, source_name="modelscope", limit=10, spec=MODELSCOPE_SPEC)
+    assert [article.title for article in items] == ["Qwen3.5 开源 27B 权重"]
+    assert items[0].url == "https://modelscope.cn/collections/qwen35"
+    assert items[0].published == datetime.fromtimestamp(1758729600).strftime("%Y-%m-%d")
+
+
+def test_json_source_without_an_array_is_a_failure_not_an_empty_pass():
+    with pytest.raises(HttpError):
+        feeds.parse_json_items(b'{"Data": {}}', source_name="modelscope", limit=5, spec=MODELSCOPE_SPEC)
+
+
+def test_json_block_reaches_the_fetcher_with_its_spec(raw_config: dict, tmp_path, monkeypatch):
+    raw = deepcopy(raw_config)
+    raw["sources"]["modelscope"] = {
+        "url": "https://modelscope.cn/api/v1/articles?PageSize=30",
+        "type": "json",
+        "json": MODELSCOPE_SPEC,
+    }
+    raw["sections"][0]["sources"].append("modelscope")
+    cfg = Config.from_dict(raw, tmp_path / "c.yaml")
+    source = next(s for s in cfg.sections[0].sources if s.name == "modelscope")
+    assert source.type == "json" and source.spec["require"] == ["IsPGC"]
+
+    monkeypatch.setattr(feeds, "fetch_bytes", lambda origin, **kwargs: MODELSCOPE_FIXTURE)
+    articles = feeds.fetch_source(source, cfg.collection)
+    assert len(articles) == 1 and articles[0].source == "modelscope"
+
+
+def test_shipped_template_swapped_huggingface_for_modelscope():
+    import yaml
+
+    from evenews.config import default_config_text
+
+    template = yaml.safe_load(default_config_text())
+    assert "modelscope" in template["sources"]
+    assert template["sources"]["modelscope"]["type"] == "json"
+    assert template["sources"]["huggingface"]["enabled"] is False, "blocked on the mainland network"
+    for name in ("sspai", "juejin"):
+        assert template["sources"][name]["enabled"] is False, "personal write-ups stay out of a company brief"
+    for section in template["sections"]:
+        assert "huggingface" not in section.get("sources", [])
+
+
+def test_the_offline_demo_reads_the_json_sample(raw_config: dict, tmp_path, fixtures_dir):
+    raw = deepcopy(raw_config)
+    raw["sources"]["modelscope"] = {
+        "url": "https://modelscope.cn/api/v1/articles?PageSize=30",
+        "type": "json",
+        "json": MODELSCOPE_SPEC,
+    }
+    raw["sections"][0]["sources"].append("modelscope")
+    cfg = Config.from_dict(raw, tmp_path / "d.yaml")
+    collected = feeds.harvest(cfg.sections, cfg.collection, now=NOW, fixtures_dir=fixtures_dir, fixtures_only=True)
+
+    picked = [article for article in collected.by_section["models"] if article.source == "modelscope"]
+    assert len(picked) == 2, "the personal post is filtered out by require"
+    assert picked[0].url.startswith("https://modelscope.cn/"), "relative links get the base back"
+    assert not collected.failed, "a JSON sample must not be parsed as a feed"
+
+
+def test_require_rules_accept_thresholds_and_lists():
+    payload = (
+        "{"
+        '"models":['
+        '{"modelId":"big-org/RealModel","tags":["llama.cpp","gguf","quantized"],"likes":2194,"downloads":37618,"trendingScore":2049},'
+        '{"modelId":"someone/weekend-test","tags":["pytorch"],"likes":0,"downloads":2,"trendingScore":0}'
+        "]}"
+    ).encode("utf-8")
+    spec = {
+        "items": "models",
+        "title": "modelId",
+        "url": ["modelId"],
+        "base_url": "https://hf-mirror.com",
+        "date": "createdAt",
+        "summary": ["tags"],
+        "facts": ["likes", "downloads", "trendingScore"],
+        "require": ["likes>=100", "trendingScore>=1"],
+    }
+    items = feeds.parse_json_items(payload, source_name="hf_trending", limit=10, spec=spec)
+    assert [article.title for article in items] == ["big-org/RealModel"], "hobby uploads get filtered out"
+    assert items[0].url == "https://hf-mirror.com/big-org/RealModel", "a bare id becomes a real link"
+    assert "llama.cpp, gguf, quantized" in items[0].raw_summary, "tag lists become model material"
+    assert "likes=2194" in items[0].raw_summary and "downloads=37618" in items[0].raw_summary
+
+
+def test_a_broken_threshold_is_a_failed_rule_not_a_crash():
+    payload = b'{"rows":[{"title":"x","url":"https://a/1","stars":"n/a"}]}'
+    spec = {"items": "rows", "require": ["stars>=10"]}
+    assert feeds.parse_json_items(payload, source_name="x", limit=5, spec=spec) == []
+
+
+def test_a_source_can_widen_the_freshness_window(raw_config: dict, tmp_path, monkeypatch):
+    raw = deepcopy(raw_config)
+    raw["collection"]["lookback_hours"] = 24
+    payload = json.dumps(
+        {"rows": [{"t": "上周开源的推理模型", "u": "https://api.example/m1", "d": "2026-09-10"}]},
+        ensure_ascii=False,
+    ).encode("utf-8")
+    raw["sources"]["old_wide"] = {
+        "url": "https://api.example/models?wide",
+        "type": "json",
+        "lookback_hours": 720,
+        "json": {"items": "rows", "title": "t", "url": "u", "date": "d"},
+    }
+    raw["sources"]["old_strict"] = {
+        "url": "https://api.example/models?strict",
+        "type": "json",
+        "json": {"items": "rows", "title": "t", "url": "u", "date": "d"},
+    }
+    raw["sections"][0]["sources"] = ["old_wide", "old_strict"]
+    cfg = Config.from_dict(raw, tmp_path / "window.yaml")
+
+    real_fetch = feeds.fetch_bytes
+
+    def fake_fetch(url, **kwargs):
+        if "api.example" in str(url):
+            return payload
+        return real_fetch(url, **kwargs)
+
+    monkeypatch.setattr(feeds, "fetch_bytes", fake_fetch)
+    collected = feeds.harvest(cfg.sections, cfg.collection, now=NOW)
+
+    picked = [article for article in collected.by_section["models"]]
+    assert [article.source for article in picked] == ["old_wide"], "only the widened source keeps a 15-day-old item"

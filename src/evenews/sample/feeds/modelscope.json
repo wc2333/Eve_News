@@ -1,0 +1,29 @@
+{
+  "Code": 200,
+  "Data": {
+    "Total": 3,
+    "Articles": [
+      {
+        "Title": "示例数据：某国产开源大模型放出 32B 权重",
+        "Desc": "示例数据：同步放出指令微调与量化版本，上下文扩展到 128K，配套评测与技术报告一并开源。",
+        "GmtPublished": 1790296200,
+        "IsPGC": true,
+        "ContentUrl": "/collections/demo-32b"
+      },
+      {
+        "Title": "示例数据：推理框架发布新版本，支持国产算力",
+        "Desc": "示例数据：新增多机张量并行与量化内核，长上下文吞吐提升约 40%，已适配多家国产 GPU。",
+        "GmtPublished": 1790248200,
+        "IsPGC": true,
+        "ContentUrl": "/collections/demo-runtime"
+      },
+      {
+        "Title": "示例数据：个人用户的部署随笔",
+        "Desc": "示例数据：个人帖，平台内容过滤（require: [IsPGC]）应把它剔除。",
+        "GmtPublished": 1790290800,
+        "IsPGC": false,
+        "ContentUrl": "/posts/demo-personal"
+      }
+    ]
+  }
+}

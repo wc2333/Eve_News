@@ -206,8 +206,8 @@ class LLMConfig:
     timeout: int = 180
     retries: int = 2
     json_mode: bool = True
-    max_output_tokens: int = 4000
-    batch_size: int = 20
+    max_output_tokens: int = 8000
+    batch_size: int = 8
     proxy: str = ""
     tasks: dict = field(default_factory=dict)
     search: dict = field(default_factory=dict)
@@ -225,8 +225,8 @@ class LLMConfig:
             timeout=int(raw.get("timeout") or 180),
             retries=int(raw.get("retries") or 0),
             json_mode=bool(raw.get("json_mode", True)),
-            max_output_tokens=int(raw.get("max_output_tokens") or 4000),
-            batch_size=int(raw.get("batch_size") or 20),
+            max_output_tokens=int(raw.get("max_output_tokens") or 8000),
+            batch_size=int(raw.get("batch_size") or 8),
             tasks=dict(raw.get("tasks") or {}),
             search=dict(raw.get("search") or {}),
             headers=dict(raw.get("headers") or {}),
@@ -329,6 +329,8 @@ class Config:
                         url=str(spec.get("url") or ""),
                         type=str(spec.get("type") or "rss"),
                         headers=dict(spec.get("headers") or {}),
+                        spec=dict(spec.get("json") or {}),
+                        lookback_hours=int(spec.get("lookback_hours") or 0),
                     )
                 )
             sections.append(

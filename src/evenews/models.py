@@ -26,6 +26,8 @@ class Source:
     url: str
     type: str = "rss"
     headers: dict[str, str] = field(default_factory=dict)
+    spec: dict = field(default_factory=dict)
+    lookback_hours: int = 0
 
     def to_dict(self) -> dict:
         return {"name": self.name, "url": self.url, "type": self.type}

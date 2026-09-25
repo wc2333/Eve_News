@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import json
 import logging
 import re
 import time
@@ -68,7 +69,7 @@ def parse_feed(raw: bytes, *, source_name: str, limit: int) -> list[Article]:
         url = (entry.get("link") or "").strip()
         if not title or not url:
             continue
-        summary = clean(entry.get("summary") or entry.get("description") or "", 900)
+        summary = clean(entry.get("summary") or entry.get("description") or "", 1200)
         articles.append(
             Article(
                 title=title,
@@ -87,10 +88,107 @@ def fixture_path(fixtures_dir: Path | None, source: Source) -> Path | None:
     if fixtures_dir is None:
         return None
     slug = slugify(source)
-    for candidate in (Path(fixtures_dir) / f"{slug}.xml", Path(fixtures_dir) / f"{slug}.rss"):
+    for candidate in (
+        Path(fixtures_dir) / f"{slug}.xml",
+        Path(fixtures_dir) / f"{slug}.rss",
+        Path(fixtures_dir) / f"{slug}.json",
+    ):
         if candidate.is_file():
             return candidate
     return None
+
+
+def _dig(node, path):
+    """Walk a dotted path such as Data.Articles through nested mappings."""
+    for part in str(path).split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(part)
+    return node
+
+
+def _pick(row: dict, keys) -> str:
+    for key in ([keys] if isinstance(keys, str) else list(keys or [])):
+        value = _dig(row, key)
+        if isinstance(value, list):
+            value = ", ".join(str(part) for part in value[:12] if isinstance(part, (str, int, float)))
+        if isinstance(value, (str, int, float)) and str(value).strip():
+            return str(value).strip()
+    return ""
+
+
+def _matches(row, rule) -> bool:
+    """A require rule is either a truthy path (``IsPGC``) or a threshold (``likes>=20``)."""
+    rule = str(rule).strip()
+    for operator in (">=", "<=", ">", "<", "!="):
+        if operator not in rule:
+            continue
+        key, _, raw = rule.partition(operator)
+        try:
+            number = float(str(_dig(row, key.strip())).strip())
+            target = float(raw.strip())
+        except (TypeError, ValueError):
+            return False
+        if operator == ">":
+            return number > target
+        if operator == "<":
+            return number < target
+        if operator == "<=":
+            return number <= target
+        if operator == "!=":
+            return number != target
+        return number >= target
+    return _dig(row, rule) not in (None, False, "", 0)
+
+
+def _date_text(value) -> str:
+    if isinstance(value, (int, float)) and value > 10_000_000:
+        return datetime.fromtimestamp(float(value)).strftime("%Y-%m-%d")
+    return str(value or "").strip()[:10]
+
+
+def parse_json_items(raw: bytes, *, source_name: str, limit: int, spec: dict | None = None) -> list[Article]:
+    """Map a JSON API onto articles so model catalogues and news APIs can be sources too."""
+    spec = dict(spec or {})
+    try:
+        data = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError as exc:
+        raise HttpError(f"{source_name}: JSON 解析失败：{exc}") from exc
+    rows = _dig(data, spec.get("items") or "items") if isinstance(data, dict) else data
+    if not isinstance(rows, list):
+        raise HttpError(f"{source_name}: 接口里没有数组，检查 json.items 指向的路径")
+    base = str(spec.get("base_url") or "").rstrip("/")
+    required = [str(key) for key in spec.get("require") or []]
+    facts = [str(key) for key in spec.get("facts") or []]
+    articles: list[Article] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if not all(_matches(row, rule) for rule in required):
+            continue
+        title = clean(_pick(row, spec.get("title") or ["title", "name"]), 240)
+        link = _pick(row, spec.get("url") or ["url", "link"])
+        if base and link and "://" not in link:
+            link = f"{base}/{link.lstrip(chr(47))}"
+        if not title or not link:
+            continue
+        body = _pick(row, spec.get("summary") or ["summary", "description", "desc"])
+        notes = [f"{key.rsplit(chr(46), 1)[-1]}={_dig(row, key)}" for key in facts if _dig(row, key) not in (None, "", False)]
+        if notes:
+            body = f"{body}（{', '.join(notes)}）" if body else ", ".join(notes)
+        body = clean(body, 1200)
+        articles.append(
+            Article(
+                title=title,
+                url=link,
+                source=source_name,
+                published=_date_text(_dig(row, spec.get("date") or "published_at")),
+                raw_summary=body or title,
+            )
+        )
+        if len(articles) >= limit:
+            break
+    return articles
 
 
 def fetch_source(
@@ -104,7 +202,11 @@ def fetch_source(
     if fixtures_only and fixture is None:
         log.info("离线模式：跳过没有本地样例的来源 %s", source.name)
         return []
-    if source.type in {"rss", "atom", "feed", "file"} or fixture is not None:
+    # A local sample says which parser fits: a .json sample never reads as a feed.
+    parser = source.type
+    if fixture is not None:
+        parser = "json" if fixture.suffix.lower() == ".json" else "rss"
+    if parser in {"rss", "atom", "feed", "file"}:
         origin = str(fixture) if fixture is not None else source.url
         raw = fetch_bytes(
             origin,
@@ -114,6 +216,16 @@ def fetch_source(
             proxy=getattr(cfg, "proxy", "") or None,
         )
         return parse_feed(raw, source_name=source.name, limit=cfg.per_source_limit)
+    if parser in {"json", "api"}:
+        origin = str(fixture) if fixture is not None else source.url
+        raw = fetch_bytes(
+            origin,
+            timeout=cfg.timeout,
+            headers=cfg.headers,
+            retries=int(getattr(cfg, "retries", 1) or 1),
+            proxy=getattr(cfg, "proxy", "") or None,
+        )
+        return parse_json_items(raw, source_name=source.name, limit=cfg.per_source_limit, spec=source.spec)
     if source.type in {"search", "web"}:
         return search_source(source, cfg)
     log.warning("忽略未知来源类型: %s (%s)", source.type, source.url)
@@ -206,6 +318,8 @@ def harvest(
                 continue
             harvest_result.errors.append(f"{by_key[key].name}: 没有取到条目")
             harvest_result.failed.append(by_key[key].name)
+        window = int(getattr(by_key[key], "lookback_hours", 0) or 0) or cfg.lookback_hours
+        articles = [article for article in articles if in_window(article.published, window, now)]
         harvest_result.fetched += len(articles)
         for section_id in owners[key]:
             harvest_result.by_section.setdefault(section_id, [])
@@ -213,10 +327,7 @@ def harvest(
 
     for section in sections:
         fresh: dict[str, Article] = {}
-        window_hours = cfg.lookback_hours
         for original in harvest_result.by_section.get(section.id, []):
-            if not in_window(original.published, window_hours, now):
-                continue
             scoped = deepcopy(original)
             scoped.section = section.id
             scoped.keywords = section.keyword_hits(original.title, original.raw_summary)

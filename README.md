@@ -2,13 +2,14 @@
 
 每天早上把 AI 行业要点整理成一封报纸味道的邮件发到公司邮箱：**Windows 和 Ubuntu 都能跑**，板块可以勾选，采集与写作环节都走可替换的大模型配置。
 
-版式对齐内部《AI 每日资讯》：报头 + 今日摘要 + 6 个板块 + 引用来源页脚。
+版式对齐内部《AI 每日资讯》：报头 + 今日摘要 + 板块页 + 引用来源页脚。
 
-## 6 个默认板块
+## 默认板块（7 个，可勾选）
 
 | id | 板块 | 关注点 |
 | --- | --- | --- |
 | `llm_oss` | 大模型与开源生态 | 模型发布、评测榜单、开源权重、API 价格 |
+| `model_releases` | 新模型与开源权重速览 | 近期上榜的新模型：谁发的、多大、什么许可、能不能本地跑 |
 | `edge_ai` | 端侧 AI 与芯片峰会 | 手机/PC 端侧模型、峰会发布、算法备案 |
 | `domestic_compute` | 国产算力与集群 | 国产 GPU/NPU、智算中心、超节点、供应链 |
 | `devices_robotics` | 端侧设备与具身智能 | 机器人、自动驾驶、AI 硬件 |
@@ -22,6 +23,8 @@ evenews enable wearables
 ```
 
 板块本身也是普通 YAML：改标题、改关键词、调 `max_items`、加自定义板块都可以。
+
+`model_releases` 是多出来的一块：新模型上榜一般比新闻慢几天，混在 `llm_oss` 里会被当天新闻挤掉，所以单开一页保证每天看得见；不需要就 `evenews disable model_releases`，或在设置页勾掉。
 
 ## 快速开始
 
@@ -163,13 +166,20 @@ src/evenews/
 ## 常见问题
 
 - **跑出来是空的**：先 `evenews sources` 看来源能不能抓到；再查 `collection.lookback_hours`（默认只看最近 30 小时）与 `require_keywords`。
+- **某个板块当天没料**：简报会自动跳过空板块，不会出现「今日该板块没有筛选出符合条件的内容」这种占位段落，版号按实际展示的板块连续排。整期一条都没有时直接跳过发信，并在运行报告里记 `本期没有任何入选条目`，避免给同事发一封白页。
+- **同一天再跑一次就空了**：已修。历史去重只挡「更早日期」推送过的条目，当天标记的记录不会饿死重跑，改完来源随时可以 `evenews run` 重新生成。
 - **同一篇新闻会不会出现在两个板块**：不会，`curator.dedupe_across_sections` 把一篇新闻留给打分最高的板块。
 - **模型没配好会不会发不出去**：不会。模型调用失败时该环节自动退回规则打分，简报照常生成，失败原因写进日志。
 - **想换版式**：改 `src/evenews/templates/digest.html.j2`，配色在 `brand` 段。
 - **中文乱码**：Windows 控制台先 `chcp 65001`，或改看 `logs/daily.log`。
+- **每条介绍太短**：模型写作环节的提示词已经要求 200-260 个汉字的综合分析（发生了什么 + 关键数字/时间点 + 一句影响）。没配密钥时走规则兜底，摘前 5 句拼成一段，长度约 130-260 字。想让模型写得更细，调大 `llm.batch_size`（一次塞给模型的条数，默认 8）与 `llm.max_output_tokens`（默认 8000）。
+- **想接一个 JSON 接口当来源**：来源写 `type: json`，再用 `json:` 把字段映射成条目，模板里的 `modelscope`、`hf_trending` 就是两个例子。`items` 是数组在返回 JSON 里的位置（点路径，如 `Data.Articles`，顶层就是数组时留空）；`title` / `summary` / `url` / `date` 给字段名或候选链（`date` 支持秒级时间戳和 ISO 字符串，`summary` 能直接吃 tags 数组）；`base_url` 把相对链接和裸 id（`Qwen/xxx`）拼成可点开的地址；`facts` 把 likes、downloads 之类的结构化字段拼进材料，模型就有数字可写；`require` 既能写「必须为真的字段」（`IsPGC`），也能写阈值（`likes>=30`）。
+- **模型榜上全是个人练手仓库**：`hf_trending` 用 `require: [likes>=30, trendingScore>=1]` 卡掉个人上传，只留新发布且有热度的模型；阈值想更严就调大。
+- **某个来源的东西都比别的老**（模型榜、周报类接口上榜慢）：在**那个来源**里单独加 `lookback_hours: 336`（小时），只放宽它自己的时间窗，别的来源照旧跟 `collection.lookback_hours`。模板里的 `hf_trending` 就是这样设成 14 天的。
+- **境外源换血**：`huggingface` 博客境内直连不稳，已 `enabled: false`；平台/机构内容改抓 **魔搭 ModelScope**（`modelscope`，JSON 来源，`require: [IsPGC]` 不抓个人帖），新模型发布改抓 **hf-mirror**（`hf_trending`，HuggingFace API 的境内镜像，直连可用，按热度阈值过滤个人仓库）。`sspai`、`juejin` 以个人体验帖为主，同样停了，`exclude_keywords` 里加了 新玩意 / 好物 / 开箱 / 购物清单。想要个人向内容就把对应来源的 `enabled` 改回 `true`。
 - **觉得新闻不够实时**：日报读的是 `collection.lookback_hours`（默认 30 小时）窗口，早上发自然是「昨天到今天」。想更快：`collection.mode: hybrid` + `llm.search.provider`（模型现查），或把 `schedule.time` 挪到中午/晚上再装一个计划任务，一天多发。规则打分里当天条目会加分、昨天的扣分，旧闻不会占版面。
 - **某个来源一直超时**：先 `evenews sources` 看谁挂了；境外源把 `collection.proxy` 显式填成代理地址（或填 `none` 强制直连），确实不要就在来源池里加 `enabled: false`。个别来源失败不会中断整期简报，失败清单会写进运行报告、设置页和简报页脚。
-- **来源实测（2026-09-25）**：机器之心、36氪、半导体行业观察、虎嗅 的公开 RSS 已失效或长期读超时，模板里已默认 `enabled: false`；补进 开源中国、Solidot、极客公园、钛媒体、掘金、Google AI 官方博客 六个可用来源，实测 17 个来源里 15 个能抓到内容（huggingface 需要代理可用，虎嗅已停用）。
+- **来源实测（2026-09-25）**：来源池共 22 个、默认启用 15 个。停用的 7 个里，机器之心、36氪、半导体行业观察、虎嗅 是公开 RSS 已失效或长期读超时；HuggingFace 博客境内直连不稳（同板块改用魔搭 ModelScope）；少数派、掘金 以个人体验帖为主，不适合公司日报。想开就在来源池把 `enabled` 改回 `true`，境外源记得配 `collection.proxy`。
 - **离线试跑出来的不是新闻**：`evenews run --offline`（设置页的「离线试跑」）用的是内置样例，简报顶部会挂红色「离线演示」提示条，邮件主题自动加 `[演示]` 前缀，避免误发给同事。
 - **完全不想碰命令行**：`evenews web` 打开设置页，板块、模型、SMTP、发送时间、密钥都能在网页里改，见「网页设置」。
 

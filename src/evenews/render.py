@@ -33,8 +33,10 @@ def _date_label(iso_date: str) -> str:
 
 
 def build_context(digest: Digest, brand: Brand) -> dict[str, Any]:
+    """Empty sections are left out entirely: a blank page in a brief reads like a mistake."""
     groups = []
-    for index, section_digest in enumerate(digest.sections, start=1):
+    filled = [section_digest for section_digest in digest.sections if section_digest.items]
+    for index, section_digest in enumerate(filled, start=1):
         items = [
             {
                 "number": f"{number:02d}",
@@ -51,9 +53,13 @@ def build_context(digest: Digest, brand: Brand) -> dict[str, Any]:
         ]
         groups.append({"index": index, "section": section_digest.section, "entries": items})
 
+    shown: dict[str, object] = {}
+    for section_digest in filled:
+        for source in section_digest.section.sources:
+            shown[f"{source.name}|{source.url}"] = source
     sources = [
         {"name": source.name, "url": source.url, "domain": domain_of(source.url)}
-        for source in digest.sources_used
+        for source in sorted(shown.values(), key=lambda item: item.name)
     ]
     source_rows = [sources[i : i + 2] for i in range(0, len(sources), 2)]
     source_rows = [row + [None] * (2 - len(row)) for row in source_rows]

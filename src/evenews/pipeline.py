@@ -168,7 +168,10 @@ def run_once(
         failed_sources=list(collected.failed),
     )
 
-    if send and config.email.enabled:
+    if send and config.email.enabled and not digest.item_count:
+        report.errors.append("本期没有任何入选条目，已跳过发送（检查来源与 require_keywords）")
+        log.error("本期没有入选条目，跳过发送")
+    elif send and config.email.enabled:
         try:
             report.recipients = send_digest(
                 config.email,
@@ -181,7 +184,7 @@ def run_once(
         except MailError as exc:
             report.errors.append(str(exc))
             log.error("邮件发送失败：%s", exc)
-    elif not report.sent:
+    elif not report.sent and not report.errors:
         log.info("跳过发送（dry-run 或 email.enabled=false）")
 
     if digest.item_count and state is not None:

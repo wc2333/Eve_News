@@ -11,9 +11,6 @@
 {% endif %}
 {% for group in groups %}
 ================ {{ group.section.title }}（第 {{ group.index }} 版）================
-{% if not group.entries %}
-今日该板块没有筛选出符合条件的内容。
-{% endif %}
 {% for item in group.entries %}
 [{{ item.number }}] {{ item.title }}
     {{ item.source }}{% if item.published %} | {{ item.published }}{% endif %}{% if item.score_label %} | 相关度 {{ item.score_label }}{% endif %}

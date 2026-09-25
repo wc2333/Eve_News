@@ -16,6 +16,7 @@ SYSTEM_PROMPT = (
     "你是公司内部《AI 每日资讯》的资深编辑助手。"
     "用户消息是一个 JSON 任务，你必须只输出 JSON 本体，不要 Markdown 代码块、不要多余说明。"
     "文字用简体中文，客观、克制、保留原文中的数字与主体名称，绝不编造任务数据之外的信息。"
+    "材料给的信息少就把话说短，宁短勿编；不要把推测写成事实。"
 )
 
 PROVIDER_FAMILY = {
@@ -196,7 +197,7 @@ class MockLLM(BaseLLM):
                 hits = [k for k in keywords if k and k in blob]
                 body = str(candidate.get("summary") or candidate.get("title") or "").strip()
                 sentences = [s.strip() for s in SENTENCE_SPLIT.split(body) if s.strip()]
-                summary = "".join(sentences[:2])[:130] or body[:130]
+                summary = "".join(sentences[:5])[:300] or body[:300]
                 digits = len(re.findall(r"\d", str(candidate.get("title", ""))))
                 score = round(min(0.95, 0.35 + 0.12 * min(len(hits), 4) + 0.02 * min(digits, 5)), 3)
                 items.append(

@@ -17,9 +17,6 @@
 _{{ group.section.description }}_
 {% endif %}
 
-{% if not group.entries %}
-今日该板块没有筛选出符合条件的内容。
-{% endif %}
 {% for item in group.entries %}
 ### {{ item.number }} {{ item.title }}
 

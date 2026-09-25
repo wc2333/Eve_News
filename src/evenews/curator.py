@@ -48,10 +48,13 @@ def rule_score(article: Article, hits: list[str], run_date: str = "") -> float:
     return round(min(score, 0.9), 3)
 
 
-def plain_summary(article: Article, limit: int = 130) -> str:
+def plain_summary(article: Article, limit: int = 260) -> str:
+    """Fallback blurb when the model is off: stitch more sentences so it still reads whole."""
     body = (article.raw_summary or article.title).strip()
     sentences = [s.strip() for s in SENTENCE_SPLIT.split(body) if s.strip()]
-    text = "".join(sentences[:2]) if sentences else body
+    text = "".join(sentences[:5]) if sentences else body
+    if len(text) < limit * 2 and article.why:
+        text = f"{text}{article.why}。"
     return text[:limit] or article.title[:limit]
 
 
@@ -92,7 +95,7 @@ def _ask_model(llm: BaseLLM, section: Section, batch: list[Article], *, offset: 
         "rules": {
             "score_range": "0-1，表示值得推送给同事的程度",
             "drop": "与板块无关、纯营销、重复内容请给 0-0.2 的低分",
-            "summary": "80-140 个汉字，先说结论再补关键数字，不要开头复述标题",
+            "summary": "200-260 个汉字，一段连贯中文：先说清楚发生了什么，再补关键数字/参数/时间点，最后一句给出影响或对读者的意义；不要复述标题、不要分点、不要堆形容词",
             "why": "一句话说明为什么值得看，不超过 30 字",
             "output": '{"items":[{"ref":0,"score":0.0,"summary":"","why":"","keywords":[]}, ...]}',
         },
@@ -127,7 +130,7 @@ def curate_section(
     for article in candidates:
         if not is_relevant(article, collection):
             continue
-        if state is not None and state.seen_before(article.fingerprint, not_before):
+        if state is not None and state.seen_before(article.fingerprint, not_before, run_date or ""):
             continue
         hits = article.keywords or section.keyword_hits(article.title, article.raw_summary)
         article.keywords = hits

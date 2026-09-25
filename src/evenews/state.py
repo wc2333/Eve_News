@@ -21,9 +21,17 @@ class StateStore:
         self.data.setdefault("seen", {})
         self.data.setdefault("runs", [])
 
-    def seen_before(self, item_fp: str, not_before: str) -> bool:
-        first_seen = self.data["seen"].get(item_fp)
-        return bool(first_seen) and str(first_seen) >= not_before
+    def seen_before(self, item_fp: str, not_before: str, run_date: str = "") -> bool:
+        """True when the item was already published on an *earlier day*.
+
+        Entries marked by a run of the same day must not disqualify a rerun,
+        otherwise re-running ``evenews run`` after fixing a source would leave
+        every section empty.
+        """
+        first_seen = str(self.data["seen"].get(item_fp) or "")
+        if not first_seen or first_seen < not_before:
+            return False
+        return not run_date or first_seen < run_date
 
     def mark_seen(self, fingerprints: list[str], run_date: str) -> None:
         for fp in fingerprints:
