@@ -303,6 +303,7 @@ class Config:
         merged = _merge(base, {k: v for k, v in raw.items() if v is not None})
         merged = _expand_env(merged)
         pool = _source_pool(merged.get("sources"))
+        declared = _source_pool(raw.get("sources"))
         sections: list[Section] = []
         for entry in merged.get("sections") or []:
             if not isinstance(entry, dict) or not entry.get("id"):
@@ -314,6 +315,8 @@ class Config:
                     if item is None:
                         raise ConfigError(f"板块 {entry['id']} 引用了未定义的来源: {ref}")
                     spec = {"name": ref, **item}
+                    if ref in declared:  # the file names this source itself, so it decides whether it is on
+                        spec["enabled"] = declared[ref].get("enabled", True) if isinstance(declared[ref], dict) else True
                 elif isinstance(ref, dict) and ref.get("url"):
                     spec = {"name": str(ref.get("name") or ref["url"]), **ref}
                 else:

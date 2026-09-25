@@ -212,24 +212,41 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def cmd_sources(args: argparse.Namespace) -> int:
+    """Probe every configured source in parallel so the check stays quick when some are dead."""
+    from concurrent.futures import ThreadPoolExecutor
+
     config = _config(args)
-    seen: set[str] = set()
-    total = 0
+    unique: dict[str, object] = {}
     for section in config.enabled_sections():
         for source in section.sources:
-            key = f"{source.name}|{source.url}|{source.type}"
-            if key in seen:
-                continue
-            seen.add(key)
-            try:
-                items = fetch_source(source, config.collection)
-                total += len(items)
-                print(f" {'OK' if items else 'EMPTY':<5} {source.name:<14} {len(items):>3} 条  {source.url}")
-                for item in items[:2]:
-                    print(f"        · {item.title[:48]}")
-            except Exception as exc:  # noqa: BLE001
-                print(f" FAIL  {source.name:<14} {exc}")
-    print(f"\n共 {len(seen)} 个来源，抓到 {total} 条候选")
+            unique.setdefault(f"{source.name}|{source.url}|{source.type}", source)
+
+    def probe(source):
+        try:
+            return source, fetch_source(source, config.collection), ""
+        except Exception as exc:  # noqa: BLE001
+            return source, [], str(exc)
+
+    sources = list(unique.values())
+    rows = []
+    with ThreadPoolExecutor(max_workers=min(8, max(1, len(sources)))) as pool:
+        for source, items, error in pool.map(probe, sources):
+            rows.append((source, items, error))
+
+    total = 0
+    failed = 0
+    for source, items, error in rows:
+        total += len(items)
+        if error:
+            failed += 1
+            print(f" FAIL  {source.name:<14} {error}")
+        else:
+            print(f" {'OK' if items else 'EMPTY':<5} {source.name:<14} {len(items):>3} 条  {source.url}")
+            for item in items[:2]:
+                print(f"        · {item.title[:48]}")
+    print(f"\n共 {len(sources)} 个来源，抓到 {total} 条候选，{failed} 个失败")
+    if failed:
+        print("确实不要的来源：在 config.yaml 的来源池里给它加 enabled: false（网页里改「高级 YAML」同样可以）")
     return 0
 
 

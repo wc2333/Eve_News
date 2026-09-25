@@ -88,23 +88,24 @@ sources:
     url: https://www.qbitai.com/feed
   jiqizhixin:
     url: https://www.jiqizhixin.com/rss
-    enabled: false           # 实测返回网页 HTML，官方 RSS 已停更
+    enabled: false           # 实测返回网页 HTML，官方 RSS 已停更；想用就改成 enabled: true
   leiphone:
     url: https://www.leiphone.com/feed
   ifanr:
     url: https://www.ifanr.com/feed
   36kr:
     url: https://36kr.com/feed
-    enabled: false           # 实测返回网页 HTML，公开 RSS 已失效
+    enabled: false           # 实测返回网页 HTML，公开 RSS 已失效；想用就改成 enabled: true
   huxiu:
     url: https://www.huxiu.com/rss/0.xml
+    enabled: false           # 实测两次都读超时，先停用；想用就改成 enabled: true
   sspai:
     url: https://sspai.com/feed
   infoq:
     url: https://www.infoq.cn/feed
   semi:
     url: http://www.semi.org.cn/feed
-    enabled: false           # 实测 404，先停用；能访问时删掉本行即可
+    enabled: false           # 实测 404，先停用；能访问时改成 enabled: true
   huggingface:
     url: https://huggingface.co/blog/feed.xml
   openai:

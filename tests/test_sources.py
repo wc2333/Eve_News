@@ -127,3 +127,14 @@ def test_pinned_proxy_does_not_silently_go_direct(monkeypatch):
     with pytest.raises(HttpError):
         net.fetch_bytes("https://example.com/feed", retries=0, proxy="http://127.0.0.1:7890")
     assert seen == ["http://127.0.0.1:7890"]
+
+
+def test_a_declared_source_overrides_the_disabled_default(raw_config: dict, tmp_path):
+    """The shipped template ships a few dead feeds as enabled:false; a file that names one is in charge of it."""
+    default_names = [source.name for source in Config.from_dict(raw_config, tmp_path / "a.yaml").sections[0].sources]
+    assert "huxiu" in default_names, "the test file declares huxiu itself"
+
+    raw = deepcopy(raw_config)
+    raw["sources"]["huxiu"]["enabled"] = False
+    opted_out = [source.name for source in Config.from_dict(raw, tmp_path / "b.yaml").sections[0].sources]
+    assert "huxiu" not in opted_out
