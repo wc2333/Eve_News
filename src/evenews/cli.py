@@ -28,6 +28,18 @@ from .scheduler import (
 log = logging.getLogger("evenews")
 
 
+def _configure_console() -> None:
+    """Force UTF-8 output so a cp1252/GBK console never kills a run."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):  # pragma: no cover - exotic streams
+            pass
+
+
 def _setup_logging(level: str) -> None:
     logging.basicConfig(
         level=getattr(logging, level.upper(), logging.INFO),
@@ -350,6 +362,7 @@ def main(argv: list[str] | None = None) -> int:
     if not getattr(args, "command", None):
         parser.print_help()
         return 1
+    _configure_console()
     _setup_logging("DEBUG" if args.verbose else "INFO")
     try:
         return int(args.func(args) or 0)
