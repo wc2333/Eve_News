@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 每日资讯 · 设置</title>
+<style>
+:root { --bg:#f5f3ee; --ink:#1f2328; --line:#d9d4c9; --accent:#b5322d; --label:#2f5c9b; --muted:#8b8f95; --card:#fffdf8; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 "Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif; }
+header { background:var(--card); border-bottom:2px solid var(--accent); padding:14px 22px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+header h1 { font:700 20px/1.3 Georgia,"Songti SC",serif; margin:0; letter-spacing:2px; }
+header .meta { color:var(--muted); font-size:12px; }
+nav { display:flex; gap:6px; padding:10px 22px 0; flex-wrap:wrap; }
+nav button { border:1px solid var(--line); background:var(--card); color:var(--ink); padding:7px 13px; border-radius:999px; cursor:pointer; font-size:13px; }
+nav button[aria-selected=true] { background:var(--accent); border-color:var(--accent); color:#fff; }
+main { padding:18px 22px 60px; max-width:1080px; }
+section[hidden] { display:none; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:16px 18px; margin-bottom:16px; }
+.card h2 { margin:0 0 4px; font:700 16px/1.4 Georgia,"Songti SC",serif; }
+.card p.hint { margin:0 0 12px; color:var(--muted); font-size:12.5px; }
+.row { display:grid; grid-template-columns:180px 1fr; gap:10px 12px; align-items:start; padding:6px 0; }
+.row label { color:var(--label); font-weight:600; padding-top:5px; }
+.row .note { color:var(--muted); font-size:12px; grid-column:2; }
+input[type=text], input[type=number], input[type=time], input[type=password], select, textarea {
+  width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:4px; background:#fff; color:var(--ink); font:inherit; }
+textarea { min-height:64px; font-family:ui-monospace,Consolas,monospace; font-size:12.5px; }
+.check { display:flex; align-items:center; gap:8px; padding-top:6px; }
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+button.act { border:1px solid var(--label); background:#fff; color:var(--label); padding:8px 14px; border-radius:4px; cursor:pointer; font-weight:600; }
+button.act.primary { background:var(--label); color:#fff; }
+button.act.danger { border-color:var(--accent); color:var(--accent); }
+button.act:disabled { opacity:.5; cursor:progress; }
+.sec { border-left:3px solid var(--accent); }
+.sec .head { display:flex; align-items:center; gap:10px; }
+.sec .head b { font:700 16px/1.4 Georgia,"Songti SC",serif; }
+.sec .tags { color:var(--muted); font-size:12px; }
+pre.out { background:#f0ece4; border-radius:4px; padding:10px 12px; max-height:260px; overflow:auto; font-size:12px; white-space:pre-wrap; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+td, th { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+.badge { font-size:11px; padding:2px 7px; border-radius:999px; background:#e7f0e7; color:#2b6b33; }
+.badge.off { background:#f3e3e2; color:var(--accent); }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 22px; }
+iframe { width:100%; height:560px; border:1px solid var(--line); background:#fff; border-radius:4px; }
+#toast { position:fixed; right:20px; bottom:20px; max-width:380px; background:var(--ink); color:#fff; padding:12px 15px; border-radius:6px; font-size:13px; opacity:0; transition:.25s; white-space:pre-wrap; }
+#toast.show { opacity:.96; }
+#toast.err { background:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 每日资讯 · 设置</h1>
+  <span class="meta" id="cfgpath">加载中…</span>
+  <span class="meta" id="secretbadge"></span>
+</header>
+<nav id="tabs">
+  <button data-tab="sections" aria-selected="true">板块勾选</button>
+  <button data-tab="collect">采集与模型</button>
+  <button data-tab="mail">邮件</button>
+  <button data-tab="plan">计划与密钥</button>
+  <button data-tab="run">运行与预览</button>
+  <button data-tab="yaml">高级 YAML</button>
+</nav>
+<main>
+<section id="sections"><div id="sectionsList"></div></section>
+
+<section id="collect" hidden>
+  <div class="card">
+    <h2>模型（信息搜集与写作）</h2>
+    <p class="hint">改 provider / base_url / model 即可换供应商；任何 OpenAI 兼容网关都走 openai。ollama 本地模型不需要密钥。关掉某个 task 就退回规则处理。</p>
+    <div class="grid2">
+      <div class="row"><label>provider</label><select data-path="llm.provider">
+        <option>mock</option><option>openai</option><option>deepseek</option><option>moonshot</option>
+        <option>dashscope</option><option>siliconflow</option><option>anthropic</option><option>ollama</option>
+      </select></div>
+      <div class="row"><label>model</label><input type="text" data-path="llm.model"></div>
+      <div class="row"><label>base_url</label><input type="text" data-path="llm.base_url"></div>
+      <div class="row"><label>api_key_env</label><input type="text" data-path="llm.api_key_env"></div>
+      <div class="row"><label>temperature</label><input type="number" step="0.1" data-path="llm.temperature"></div>
+      <div class="row"><label>batch_size</label><input type="number" data-path="llm.batch_size"></div>
+    </div>
+    <div class="grid2">
+      <div class="row"><label>筛选排序 select</label><div class="check"><input type="checkbox" data-path="llm.tasks.select"></div></div>
+      <div class="row"><label>板块归类 classify</label><div class="check"><input type="checkbox" data-path="llm.tasks.classify"></div></div>
+      <div class="row"><label>摘要 summarize</label><div class="check"><input type="checkbox" data-path="llm.tasks.summarize"></div></div>
+      <div class="row"><label>导语 lead</label><div class="check"><input type="checkbox" data-path="llm.tasks.lead"></div></div>
+    </div>
+    <div class="actions">
+      <button class="act" data-action="test-model">测试模型连通</button>
+      <button class="act primary" data-save="settings">保存</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>来源与过滤</h2>
+    <p class="hint">mode 决定要不要让模型自己联网检索；require_keywords 是「和 AI 有关」的门槛，exclude_keywords 直接丢弃。</p>
+    <div class="grid2">
+      <div class="row"><label>collection.mode</label><select data-path="collection.mode">
+        <option>feeds</option><option>llm</option><option>hybrid</option></select></div>
+      <div class="row"><label>lookback_hours</label><input type="number" data-path="collection.lookback_hours"></div>
+      <div class="row"><label>per_source_limit</label><input type="number" data-path="collection.per_source_limit"></div>
+      <div class="row"><label>dedupe_days</label><input type="number" data-path="collection.dedupe_days"></div>
+      <div class="row"><label>search.provider</label><select data-path="llm.search.provider">
+        <option>none</option><option>tavily</option><option>serper</option></select></div>
+      <div class="row"><label>检索词/板块</label><input type="number" data-path="llm.search.queries_per_section"></div>
+    </div>
+    <div class="row"><label>require_keywords</label><textarea data-path="collection.require_keywords" data-list="1"></textarea></div>
+    <div class="row"><label>exclude_keywords</label><textarea data-path="collection.exclude_keywords" data-list="1"></textarea></div>
+    <div class="actions">
+      <button class="act" data-action="test-sources">测试所有来源</button>
+      <button class="act primary" data-save="settings">保存</button>
+    </div>
+    <pre class="out" id="sourceOut" hidden></pre>
+  </div>
+</section>
+<section id="mail" hidden>
+  <div class="card">
+    <h2>SMTP 发送</h2>
+    <p class="hint">QQ / 163 / 企业邮：先开启 SMTP 并生成<strong>授权码</strong>，把授权码当密码填到「计划与密钥」。密码本身不进配置文件，这里只填变量名。</p>
+    <div class="grid2">
+      <div class="row"><label>启用发送</label><div class="check"><input type="checkbox" data-path="email.enabled"></div></div>
+      <div class="row"><label>smtp_host</label><input type="text" data-path="email.smtp_host"></div>
+      <div class="row"><label>smtp_port</label><input type="number" data-path="email.smtp_port"></div>
+      <div class="row"><label>security</label><select data-path="email.security"><option>ssl</option><option>starttls</option><option>none</option></select></div>
+      <div class="row"><label>username</label><input type="text" data-path="email.username"></div>
+      <div class="row"><label>password_env</label><input type="text" data-path="email.password_env"></div>
+      <div class="row"><label>from</label><input type="text" data-path="email.from"></div>
+      <div class="row"><label>subject_template</label><input type="text" data-path="email.subject_template"></div>
+    </div>
+    <div class="row"><label>to（每行一个）</label><textarea data-path="email.to" data-list="1"></textarea></div>
+    <div class="row"><label>cc（每行一个）</label><textarea data-path="email.cc" data-list="1"></textarea></div>
+    <div class="row"><label>attach_html</label><div class="check"><input type="checkbox" data-path="email.attach_html"></div></div>
+    <div class="actions">
+      <button class="act" data-action="test-email">发测试邮件</button>
+      <button class="act primary" data-save="settings">保存</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>报头与署名</h2>
+    <div class="grid2">
+      <div class="row"><label>company</label><input type="text" data-path="brand.company"></div>
+      <div class="row"><label>logo_text</label><input type="text" data-path="brand.logo_text"></div>
+      <div class="row"><label>title</label><input type="text" data-path="brand.title"></div>
+      <div class="row"><label>kicker</label><input type="text" data-path="brand.kicker"></div>
+      <div class="row"><label>classification</label><input type="text" data-path="brand.classification"></div>
+      <div class="row"><label>footer_note</label><input type="text" data-path="brand.footer_note"></div>
+    </div>
+    <div class="actions"><button class="act primary" data-save="settings">保存</button></div>
+  </div>
+</section>
+
+<section id="plan" hidden>
+  <div class="card">
+    <h2>每天什么时候发</h2>
+    <p class="hint">这里改的是 <code>schedule</code>；<code>evenews install-task</code> / <code>install-cron</code> / <code>daemon</code> 都读同一份配置。</p>
+    <div class="grid2">
+      <div class="row"><label>发送时间</label><input type="time" data-path="schedule.time" data-time="1"></div>
+      <div class="row"><label>timezone</label><input type="text" data-path="schedule.timezone"></div>
+      <div class="row"><label>仅工作日</label><div class="check"><input type="checkbox" data-path="schedule.weekday_only"></div></div>
+      <div class="row"><label>log_level</label><select data-path="log_level"><option>INFO</option><option>DEBUG</option><option>WARNING</option></select></div>
+    </div>
+    <div class="actions"><button class="act primary" data-save="settings">保存</button></div>
+  </div>
+  <div class="card">
+    <h2>密钥（写入 .env）</h2>
+    <p class="hint" id="envpath">留空并保存 = 清除该项。</p>
+    <div id="secretRows"></div>
+    <div class="actions"><button class="act primary" id="saveSecrets">保存密钥</button></div>
+  </div>
+</section>
+
+<section id="run" hidden>
+  <div class="card">
+    <h2>立刻跑一次</h2>
+    <div class="actions">
+      <button class="act" data-action="preview-offline">离线试跑（内置样例，不发信）</button>
+      <button class="act" data-action="preview">生成今天的预览（不发信）</button>
+      <button class="act primary" data-action="send">立即生成并发送</button>
+    </div>
+    <pre class="out" id="runOut">还没有运行记录。</pre>
+  </div>
+  <div class="card">
+    <h2>最新简报预览</h2>
+    <div class="actions"><button class="act" id="reloadPreview">重新载入</button></div>
+    <iframe id="preview" title="digest"></iframe>
+  </div>
+  <div class="card">
+    <h2>最近运行</h2>
+    <div id="runs"></div>
+    <p class="hint" id="seenhint"></p>
+  </div>
+</section>
+
+<section id="yaml" hidden>
+  <div class="card">
+    <h2>直接编辑 config.yaml</h2>
+    <p class="hint">保存前会走一遍真实配置校验，报错就不会落盘。注意：图形界面保存会重写文件、丢失注释，模板注释见 <code>config.example.yaml</code>。</p>
+    <textarea id="yamlBox" style="min-height:420px"></textarea>
+    <div class="actions"><button class="act primary" id="saveYaml">保存 YAML</button></div>
+  </div>
+</section>
+</main>
+<div id="toast"></div>
+<script>
+let state = null;
+const nodes = (sel) => Array.from(document.querySelectorAll(sel));
+const getPath = (obj, dotted) => dotted.split(".").reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
+function setPath(target, dotted, value) {
+  const keys = dotted.split(".");
+  let node = target;
+  keys.slice(0, -1).forEach((key) => { if (typeof node[key] !== "object" || node[key] === null) node[key] = {}; node = node[key]; });
+  node[keys[keys.length - 1]] = value;
+}
+function toast(message, isError) {
+  const box = document.getElementById("toast");
+  box.textContent = message;
+  box.className = "show" + (isError ? " err" : "");
+  setTimeout(() => { box.className = isError ? "err" : ""; }, isError ? 6000 : 3200);
+}
+async function api(path, payload, method, soft) {
+  const response = await fetch(path, {
+    method: method || "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  let data;
+  try { data = await response.json(); } catch (error) { throw new Error("服务端返回了非 JSON 内容"); }
+  if (!response.ok || (data.ok === false && !soft)) throw new Error(data.error || ("HTTP " + response.status));
+  return data;
+}
+function fill() {
+  document.getElementById("cfgpath").textContent = "配置：" + state.config_path + "   v" + state.version;
+  const ready = state.secrets.filter((row) => row.set).length;
+  document.getElementById("secretbadge").innerHTML = "密钥 " + ready + "/" + state.secrets.length +
+    (state.problems.length ? "   <span class='badge off'>" + state.problems.length + " 项待处理</span>" : "   <span class='badge'>配置可用</span>");
+  nodes("[data-path]").forEach((el) => {
+    const value = getPath(state.raw, el.dataset.path);
+    if (el.type === "checkbox") el.checked = Boolean(value);
+    else if (el.dataset.list) el.value = (Array.isArray(value) ? value : []).join("\n");
+    else el.value = value === null || value === undefined ? "" : String(value);
+  });
+  document.getElementById("yamlBox").value = state.yaml;
+  document.getElementById("envpath").textContent = "只提交你改动过的行；点清除会删除 .env 里的那一行：" + state.env_path;
+  renderSections();
+  renderSecrets();
+  renderRuns();
+  const latest = state.latest && state.latest.date;
+  const frame = document.getElementById("preview");
+  frame.src = latest ? "/api/preview?date=" + latest : "";
+  document.getElementById("runOut").textContent = latest ? "最新一期：" + latest + "   文件：" + (state.latest.files || []).join(", ") : "还没有生成过简报。";
+}
+function renderSections() {
+  const host = document.getElementById("sectionsList");
+  host.innerHTML = "";
+  state.sections.forEach((section) => {
+    const card = document.createElement("div");
+    card.className = "card sec";
+    card.innerHTML =
+      '<div class="head"><input type="checkbox" class="sec-on" ' + (section.enabled ? "checked" : "") + ">" +
+      "<b>" + section.title + "</b><span class='tags'>" + section.id + "   来源：" + (section.sources || []).join("、") + "</span></div>" +
+      "<p class='hint'>" + (section.description || "") + "</p>" +
+      "<div class='row'><label>条数上限</label><input type='number' class='sec-max' value='" + section.max_items + "'></div>" +
+      "<div class='row'><label>关键词（每行一个）</label><textarea class='sec-keys' rows='4'>" + (section.keywords || []).join("\n") + "</textarea></div>" +
+      "<div class='row'><label>给模型的额外要求</label><textarea class='sec-extra' rows='2'></textarea></div>";
+    card.querySelector(".sec-extra").value = "";
+    card.querySelector(".sec-extra").placeholder = "（可选）";
+    host.appendChild(card);
+  });
+  const actions = document.createElement("div");
+  actions.className = "card";
+  actions.innerHTML = "<div class='actions'><button class='act primary' id='saveSections'>保存板块设置</button>" +
+    "<button class='act' id='allOn'>全部开启</button><button class='act' id='allOff'>全部关闭</button></div>" +
+    "<p class='hint'>板块的增删（改标题、加新板块、换来源）在「高级 YAML」里做，来源池在 config.yaml 的 sources 段。</p>";
+  host.appendChild(actions);
+  document.getElementById("saveSections").onclick = saveSections;
+  document.getElementById("allOn").onclick = () => { nodes(".sec-on").forEach((box) => { box.checked = true; }); saveSections(); };
+  document.getElementById("allOff").onclick = () => { nodes(".sec-on").forEach((box) => { box.checked = false; }); saveSections(); };
+}
+async function saveSections() {
+  const updates = state.sections.map((section, index) => {
+    const card = nodes(".card.sec")[index];
+    const lines = (selector) => card.querySelector(selector).value.split("\n").map((line) => line.trim()).filter(Boolean);
+    return {
+      id: section.id,
+      enabled: card.querySelector(".sec-on").checked,
+      max_items: Number(card.querySelector(".sec-max").value) || section.max_items,
+      keywords: lines(".sec-keys").length ? lines(".sec-keys") : section.keywords,
+    };
+  });
+  const extra = nodes(".sec-extra");
+  updates.forEach((update, index) => {
+    const value = extra[index].value.trim();
+    if (value) update.extra_prompt = value;
+  });
+  try {
+    const data = await api("/api/sections", { updates });
+    toast("板块设置已保存");
+    await reload();
+    if (data.problems && data.problems.length) toast("已保存，但还有提醒：" + data.problems.join("；"), true);
+  } catch (error) { toast(error.message, true); }
+}
+function renderSecrets() {
+  const host = document.getElementById("secretRows");
+  host.innerHTML = "";
+  state.secrets.forEach((row) => {
+    const line = document.createElement("div");
+    line.className = "row";
+    line.innerHTML = "<label>" + row.label + "</label><div><input type='password' placeholder='" +
+      (row.set ? "已设置（" + row.length + " 位），留空表示不修改" : "未设置，粘贴后点保存") + "' data-env='" + row.env + "'>" +
+      "<div class='note'>变量名：" + row.env + "   <span class='badge" + (row.set ? "" : " off") + "'>" + (row.set ? "已设置" : "未设置") + "</span> " +
+      "<a href='#' class='clear'>清除</a></div></div>";
+    host.appendChild(line);
+  });
+  nodes(".clear").forEach((link, index) => {
+    link.onclick = async (event) => {
+      event.preventDefault();
+      const env = state.secrets[index].env;
+      try { await api("/api/secrets", { values: { [env]: "" } }); toast("已清除 " + env); await reload(); }
+      catch (error) { toast(error.message, true); }
+    };
+  });
+  document.getElementById("saveSecrets").onclick = async () => {
+    const values = {};
+    nodes("#secretRows input[type=password]").forEach((input) => { if (input.value) values[input.dataset.env] = input.value; });
+    if (!Object.keys(values).length) { toast("没有需要保存的密钥"); return; }
+    try { await api("/api/secrets", { values }); toast("已写入 " + Object.keys(values).join(", ")); await reload(); }
+    catch (error) { toast(error.message, true); }
+  };
+}
+function renderRuns() {
+  const runs = (state.state && state.state.runs) || [];
+  const host = document.getElementById("runs");
+  if (!runs.length) { host.innerHTML = "<p class='hint'>还没有运行记录。</p>"; }
+  else {
+    host.innerHTML = "<table><tr><th>日期</th><th>入选</th><th>候选</th><th>发送</th><th>主题</th></tr>" +
+      runs.map((run) => "<tr><td>" + run.run_date + "</td><td>" + run.items + "</td><td>" + run.candidates + "</td><td>" +
+        (run.sent ? "已发送" : "未发送") + "</td><td>" + (run.subject || "") + "</td></tr>").reverse().join("") + "</table>";
+  }
+  document.getElementById("seenhint").textContent = "已记录 " + ((state.state && state.state.seen) || 0) + " 条发过的内容，默认 10 天内不会重发。";
+}
+function collectSettings() {
+  const settings = {};
+  nodes("[data-path]").forEach((el) => {
+    let value;
+    if (el.type === "checkbox") value = el.checked;
+    else if (el.dataset.list) value = el.value.split("\n").map((line) => line.trim()).filter(Boolean);
+    else if (el.type === "number") value = el.value === "" ? null : Number(el.value);
+    else value = el.value;
+    setPath(settings, el.dataset.path, value);
+  });
+  return settings;
+}
+async function reload() {
+  state = await api("/api/state", undefined, "GET");
+  fill();
+}
+nodes("#tabs button").forEach((button) => {
+  button.onclick = () => {
+    nodes("#tabs button").forEach((other) => other.setAttribute("aria-selected", String(other === button)));
+    nodes("main > section").forEach((section) => { section.hidden = section.id !== button.dataset.tab; });
+  };
+});
+nodes("[data-save=settings]").forEach((button) => {
+  button.onclick = async () => {
+    button.disabled = true;
+    try {
+      const data = await api("/api/settings", { settings: collectSettings() });
+      toast("已保存 " + data.saved);
+      await reload();
+      if (data.problems && data.problems.length) toast("已保存，但还有提醒：" + data.problems.join("；"), true);
+    } catch (error) { toast(error.message, true); }
+    finally { button.disabled = false; }
+  };
+});
+const ACTION_LABEL = {
+  "preview-offline": { action: "preview", offline: true },
+  preview: { action: "preview" },
+  send: { action: "send" },
+  "test-email": { action: "test-email" },
+  "test-model": { action: "test-model" },
+  "test-sources": { action: "test-sources" },
+};
+nodes("[data-action]").forEach((button) => {
+  button.onclick = async () => {
+    const payload = Object.assign({}, ACTION_LABEL[button.dataset.action] || {});
+    if (button.dataset.action === "send" && !confirm("现在就生成并发送今天的简报吗？")) return;
+    button.disabled = true;
+    const out = document.getElementById("runOut") || document.getElementById("sourceOut");
+    if (out) { out.hidden = false; out.textContent = "正在执行：" + button.textContent + " …"; }
+    try {
+      const data = await api("/api/action", payload, "POST", true);
+      const lines = [data.summary || "完成"];
+      if (data.errors && data.errors.length) lines.push("问题：" + data.errors.join("；"));
+      if (data.sources) lines.push(data.sources.map((row) => row.name + " " + (row.error ? "FAIL " + row.error : row.items + " 条")).join("\n"));
+      if (out) out.textContent = lines.join("\n");
+      toast(lines[0], Boolean(data.errors && data.errors.length));
+      await reload();
+    } catch (error) {
+      if (out) { out.hidden = false; out.textContent = "失败：" + error.message; }
+      toast(error.message, true);
+    } finally { button.disabled = false; }
+  };
+});
+document.getElementById("reloadPreview").onclick = () => reload();
+document.getElementById("saveYaml").onclick = async () => {
+  try {
+    const data = await api("/api/yaml", { yaml: document.getElementById("yamlBox").value }, "PUT");
+    toast("YAML 已保存");
+    await reload();
+    if (data.problems && data.problems.length) toast("已保存，但还有提醒：" + data.problems.join("；"), true);
+  } catch (error) { toast(error.message, true); }
+};
+reload().catch((error) => toast("读取配置失败：" + error.message, true));
+</script>
+</body>
+</html>

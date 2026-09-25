@@ -15,6 +15,7 @@ from .llm import build_llm
 from .mailer import MailError, send_digest
 from .pipeline import run_once
 from .render import render_text
+from .web import DEFAULT_PORT, serve
 from .scheduler import (
     cron_line,
     daemon_hint,
@@ -280,6 +281,14 @@ def cmd_systemd(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_web(args: argparse.Namespace) -> int:
+    config = _config(args)
+    problems = config.problems(need_email=False)
+    for problem in problems:
+        print(f"  ! {problem}")
+    return serve(Path(config.path or "config.yaml"), host=args.host, port=args.port, open_browser=not args.no_browser)
+
+
 def cmd_version(args: argparse.Namespace) -> int:
     print(f"evenews {__version__} · Python {sys.version.split()[0]}")
     return 0
@@ -350,6 +359,12 @@ def build_parser() -> argparse.ArgumentParser:
     systemd = sub.add_parser("systemd", help="Ubuntu/systemd：打印 service 与 timer 单元")
     systemd.add_argument("--timer", action="store_true", help="输出 oneshot + timer，而不是常驻 daemon")
     systemd.set_defaults(func=cmd_systemd)
+
+    web = sub.add_parser("web", help="打开浏览器设置页面（本地 HTTP 服务，改配置不用动手）")
+    web.add_argument("--host", default="127.0.0.1", help="默认只监听本机；改 0.0.0.0 会开放到局域网")
+    web.add_argument("--port", type=int, default=DEFAULT_PORT)
+    web.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
+    web.set_defaults(func=cmd_web)
 
     version = sub.add_parser("version", help="显示版本")
     version.set_defaults(func=cmd_version)

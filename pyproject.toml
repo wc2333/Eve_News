@@ -25,4 +25,4 @@ evenews = "evenews.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-evenews = ["templates/*", "data/*", "sample/feeds/*"]
+evenews = ["templates/*", "data/*", "sample/feeds/*", "webui/*"]

@@ -12,8 +12,10 @@ venv/
 # secrets & generated output
 .env
 config.yaml
+.config.candidate.yaml
 out/
 state/
 logs/
 run_daily.cmd
 demo/
+config.yaml.bak

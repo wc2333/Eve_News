@@ -2,6 +2,17 @@
 
 三种定时方式选一种即可。发送时间统一读 `config.yaml` 的 `schedule.time` / `schedule.timezone`。
 
+## 先填配置（网页最省事）
+
+装定时器之前，先用设置页把 SMTP、模型、收件人、发送时间、密钥填完——三种定时方式读的都是同一份 `config.yaml`。
+
+```bash
+evenews web                    # 本机桌面：自动开浏览器
+evenews web --no-browser       # 无图形界面的服务器
+```
+
+服务器上远程改配置：`evenews web --no-browser` 之后，在自己电脑上做 `ssh -L 8765:127.0.0.1:8765 user@host`，浏览器打开 `http://127.0.0.1:8765`。别直接把服务绑到 `0.0.0.0`。
+
 ## Windows（公司台式机 / 服务器）
 
 ```powershell
@@ -72,6 +83,7 @@ systemctl status evenews; journalctl -u evenews -f
 - `.env`、`config.yaml`、`out/`、`state/`、`logs/`、`run_daily.cmd` 都在 `.gitignore` 里，不进仓库。
 - 配置里只写变量名（`password_env` / `api_key_env` / `search.api_key_env`），值来自环境变量或 `.env`。
 - 建议单独申请一个只用于群发的邮箱账号；QQ/163 用授权码当密码，授权码到期需要更换。
+- 网页设置页保存密钥会直接改写 `.env`（非 Windows 下自动 `chmod 600`）；留空并保存 = 删掉那一行。
 
 ## 运维清单
 

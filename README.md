@@ -44,6 +44,28 @@ evenews run                      # 正式生成并发送
 
 每次运行在 `out/<日期>/` 得到 `digest.html` / `digest.md` / `digest.txt` / `digest.json`。
 
+## 网页设置（推荐）
+
+不想手改 YAML 就开本地设置页：板块勾选、模型、SMTP、发送时间、密钥都在网页里填，写完直接点「立即生成并发送」验证。
+
+```bash
+evenews web                            # 自动开浏览器，默认 http://127.0.0.1:8765
+evenews web --port 9000 --no-browser   # 换端口 / 服务器上不自动开浏览器
+```
+
+| 页签 | 能改什么 |
+| --- | --- |
+| 板块勾选 | 6 个板块的开关、条数上限、关键词；板块和来源池的增删去「高级 YAML」 |
+| 采集与模型 | `provider` / `base_url` / `model` / 各环节开关、过滤关键词、联网检索；带「测试模型连通」「测试所有来源」 |
+| 邮件 | SMTP 主机端口与 security、收发件人、报头署名；一键「发测试邮件」 |
+| 计划与密钥 | 每天几点发、时区、仅工作日；密钥写在这里，只落 `.env` |
+| 运行与预览 | 离线试跑、生成预览、立即发送，页面内直接看最新一期 |
+| 高级 YAML | 整份 `config.yaml` 直接编辑，保存前走一遍真实校验，不通过不落盘 |
+
+- 默认只监听 `127.0.0.1`，别在生产机上 `--host 0.0.0.0` 开放到局域网。
+- 密钥只写进 `.env`，接口只回「是否已设置 + 长度」，绝不回传明文；`config.yaml` 里只存变量名。
+- 图形界面保存会重写 `config.yaml`（丢注释，注释版模板看 `config.example.yaml`），同时留一份 `config.yaml.bak` 兜底。
+
 ## 每日定时
 
 ```bash
@@ -122,6 +144,8 @@ QQ / 163 / 企业邮需要在邮箱设置里开启 SMTP 并生成**授权码**�
 ```
 src/evenews/
   cli.py          命令行入口（run / preview / daemon / enable / doctor ...）
+  web.py          本地网页设置台（浏览器改配置，密钥只写 .env）
+  webui/          设置页 index.html（单文件，无前端框架、不引外部 CDN）
   config.py       YAML + 环境变量，板块与来源池解析
   feeds.py        RSS 采集（并发、时间窗、来源池去重）
   search.py       可选联网检索（Tavily / Serper）
@@ -143,6 +167,8 @@ src/evenews/
 - **模型没配好会不会发不出去**：不会。模型调用失败时该环节自动退回规则打分，简报照常生成，失败原因写进日志。
 - **想换版式**：改 `src/evenews/templates/digest.html.j2`，配色在 `brand` 段。
 - **中文乱码**：Windows 控制台先 `chcp 65001`，或改看 `logs/daily.log`。
+- **完全不想碰命令行**：`evenews web` 打开设置页，板块、模型、SMTP、发送时间、密钥都能在网页里改，见「网页设置」。
+
 
 ## 开发
 
