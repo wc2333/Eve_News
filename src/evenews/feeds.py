@@ -206,6 +206,8 @@ def fetch_source(
     parser = source.type
     if fixture is not None:
         parser = "json" if fixture.suffix.lower() == ".json" else "rss"
+    # A source pinned to proxy: none must not be routed through a foreign exit.
+    proxy_mode = str(getattr(source, "proxy", "") or "") or str(getattr(cfg, "proxy", "") or "")
     if parser in {"rss", "atom", "feed", "file"}:
         origin = str(fixture) if fixture is not None else source.url
         raw = fetch_bytes(
@@ -213,7 +215,7 @@ def fetch_source(
             timeout=cfg.timeout,
             headers=cfg.headers,
             retries=int(getattr(cfg, "retries", 1) or 1),
-            proxy=getattr(cfg, "proxy", "") or None,
+            proxy=proxy_mode or None,
         )
         return parse_feed(raw, source_name=source.name, limit=cfg.per_source_limit)
     if parser in {"json", "api"}:
@@ -223,7 +225,7 @@ def fetch_source(
             timeout=cfg.timeout,
             headers=cfg.headers,
             retries=int(getattr(cfg, "retries", 1) or 1),
-            proxy=getattr(cfg, "proxy", "") or None,
+            proxy=proxy_mode or None,
         )
         return parse_json_items(raw, source_name=source.name, limit=cfg.per_source_limit, spec=source.spec)
     if source.type in {"search", "web"}:

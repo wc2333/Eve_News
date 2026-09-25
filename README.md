@@ -178,7 +178,7 @@ src/evenews/
 - **某个来源的东西都比别的老**（模型榜、周报类接口上榜慢）：在**那个来源**里单独加 `lookback_hours: 336`（小时），只放宽它自己的时间窗，别的来源照旧跟 `collection.lookback_hours`。模板里的 `hf_trending` 就是这样设成 14 天的。
 - **境外源换血**：`huggingface` 博客境内直连不稳，已 `enabled: false`；平台/机构内容改抓 **魔搭 ModelScope**（`modelscope`，JSON 来源，`require: [IsPGC]` 不抓个人帖），新模型发布改抓 **hf-mirror**（`hf_trending`，HuggingFace API 的境内镜像，直连可用，按热度阈值过滤个人仓库）。`sspai`、`juejin` 以个人体验帖为主，同样停了，`exclude_keywords` 里加了 新玩意 / 好物 / 开箱 / 购物清单。想要个人向内容就把对应来源的 `enabled` 改回 `true`。
 - **觉得新闻不够实时**：日报读的是 `collection.lookback_hours`（默认 30 小时）窗口，早上发自然是「昨天到今天」。想更快：`collection.mode: hybrid` + `llm.search.provider`（模型现查），或把 `schedule.time` 挪到中午/晚上再装一个计划任务，一天多发。规则打分里当天条目会加分、昨天的扣分，旧闻不会占版面。
-- **某个来源一直超时**：先 `evenews sources` 看谁挂了；境外源把 `collection.proxy` 显式填成代理地址（或填 `none` 强制直连），确实不要就在来源池里加 `enabled: false`。个别来源失败不会中断整期简报，失败清单会写进运行报告、设置页和简报页脚。
+- **某个来源一直超时**：先 `evenews sources` 看谁挂了。默认先走系统代理、失败自动直连；代理回 403/429/5xx 同样算失败，也会自动改直连再试。境内站（魔搭、hf-mirror）本来不该绕境外代理出口，模板里已给它们写 `proxy: none` 强制直连；某个境外源想单独走代理就在来源里写 `proxy: http://127.0.0.1:7890`，全局开关是 `collection.proxy`。个别来源失败不会中断整期简报，失败清单会写进运行报告、设置页和简报页脚。
 - **来源实测（2026-09-25）**：来源池共 22 个、默认启用 15 个。停用的 7 个里，机器之心、36氪、半导体行业观察、虎嗅 是公开 RSS 已失效或长期读超时；HuggingFace 博客境内直连不稳（同板块改用魔搭 ModelScope）；少数派、掘金 以个人体验帖为主，不适合公司日报。想开就在来源池把 `enabled` 改回 `true`，境外源记得配 `collection.proxy`。
 - **离线试跑出来的不是新闻**：`evenews run --offline`（设置页的「离线试跑」）用的是内置样例，简报顶部会挂红色「离线演示」提示条，邮件主题自动加 `[演示]` 前缀，避免误发给同事。
 - **完全不想碰命令行**：`evenews web` 打开设置页，板块、模型、SMTP、发送时间、密钥都能在网页里改，见「网页设置」。

@@ -28,6 +28,7 @@ class Source:
     headers: dict[str, str] = field(default_factory=dict)
     spec: dict = field(default_factory=dict)
     lookback_hours: int = 0
+    proxy: str = ""
 
     def to_dict(self) -> dict:
         return {"name": self.name, "url": self.url, "type": self.type}

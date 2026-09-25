@@ -27,7 +27,9 @@ class HttpError(Exception):
 
 
 NO_PROXY_WORDS = {"none", "direct", "off", "no"}
-PROXY_HINT = "（网络不通时试试 collection.proxy：填代理地址，或填 none 强制不走代理）"
+# A proxy exit that answers these is not a network failure, but the origin is still reachable directly.
+RETRY_DIRECT_STATUS = {408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 524}
+PROXY_HINT = "（网络不通时试试 collection.proxy：填代理地址，或填 none 强制不走代理；单个来源也可以写 proxy: none 单独直连）"
 _OPENERS: dict[str, Any] = {}
 
 
@@ -44,6 +46,13 @@ def opener_for(proxy: str | None):
         _OPENERS[key] = built
     return _OPENERS[key]
 
+
+
+def _worth_a_direct_retry(exc: Exception, mode) -> bool:
+    """True when dropping the proxy could plausibly fix this attempt."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return mode is None and int(exc.code or 0) in RETRY_DIRECT_STATUS
+    return isinstance(exc, OSError)
 
 
 def _local_bytes(url: str) -> bytes | None:
@@ -91,10 +100,10 @@ def fetch_bytes(
                 last_error = exc
                 if attempt < mode_retries:
                     time.sleep(1.5 * (attempt + 1))
-                elif index < len(modes) - 1 and isinstance(exc, OSError) and not isinstance(exc, urllib.error.HTTPError):
-                    log.warning("%s 走代理取不到，改用直连再试一次：%s", url, exc)
+                elif index < len(modes) - 1 and _worth_a_direct_retry(exc, mode):
+                    log.warning("%s 经代理不可用（%s），改用直连再试一次", url, getattr(exc, "code", None) or exc)
     detail = getattr(last_error, "reason", None) or last_error
-    if proxy is None and isinstance(last_error, OSError) and not isinstance(last_error, urllib.error.HTTPError):
+    if proxy is None and _worth_a_direct_retry(last_error, None):
         detail = f"{detail}{PROXY_HINT}"
     raise HttpError(f"{verb} {url} failed: {detail}") from last_error
 

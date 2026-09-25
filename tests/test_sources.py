@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import io
+import urllib.error
 import urllib.request
+from email.message import Message
 from copy import deepcopy
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -290,3 +293,61 @@ def test_a_source_can_widen_the_freshness_window(raw_config: dict, tmp_path, mon
 
     picked = [article for article in collected.by_section["models"]]
     assert [article.source for article in picked] == ["old_wide"], "only the widened source keeps a 15-day-old item"
+
+
+class _StatusOpener:
+    def __init__(self, code) -> None:
+        self.code = code
+
+    def open(self, request, timeout=None):
+        if self.code:
+            raise urllib.error.HTTPError(request.full_url, self.code, "blocked", Message(), io.BytesIO(b""))
+        return _StubResponse(b'<rss><channel></channel></rss>')
+
+
+def test_a_proxy_that_answers_5xx_is_escalated_to_a_direct_try(monkeypatch):
+    from evenews import net
+
+    seen: list = []
+
+    def fake_opener_for(mode):
+        seen.append(mode)
+        return _StatusOpener(503 if mode is None else None)
+
+    monkeypatch.setattr(net, "opener_for", fake_opener_for)
+    assert net.fetch_bytes("https://modelscope.cn/api/v1/articles", retries=0)
+    assert seen == [None, "none"], "a blocked proxy exit must not be the end of the story"
+
+
+def test_a_pinned_proxy_still_reports_the_status(monkeypatch):
+    from evenews import net
+
+    monkeypatch.setattr(net, "opener_for", lambda mode: _StatusOpener(403))
+    with pytest.raises(HttpError):
+        net.fetch_bytes("https://example.com/feed", retries=0, proxy="http://127.0.0.1:7890")
+
+
+def test_a_source_can_pin_its_own_proxy(raw_config: dict, tmp_path, monkeypatch):
+    raw = deepcopy(raw_config)
+    raw["collection"]["proxy"] = "http://127.0.0.1:7890"
+    raw["sources"]["domestic"] = {
+        "url": "https://modelscope.cn/api/v1/articles?PageSize=30",
+        "type": "json",
+        "proxy": "none",
+        "json": {"items": "rows", "title": "t", "url": "u"},
+    }
+    raw["sources"]["abroad"] = {"url": "https://example.com/api", "type": "json", "json": {"items": "rows", "title": "t", "url": "u"}}
+    raw["sections"][0]["sources"] = ["domestic", "abroad"]
+    cfg = Config.from_dict(raw, tmp_path / "proxy.yaml")
+
+    used: list = []
+
+    def fake_fetch(url, **kwargs):
+        used.append(kwargs.get("proxy"))
+        return b'{"rows":[]}'
+
+    monkeypatch.setattr(feeds, "fetch_bytes", fake_fetch)
+    for source in cfg.sections[0].sources:
+        feeds.fetch_source(source, cfg.collection)
+
+    assert used == ["none", "http://127.0.0.1:7890"], "the source wins over the collection default"

@@ -142,6 +142,7 @@ def run_once(
             "fetched": collected.fetched,
             "candidates": len(collected.candidates),
             "failed_sources": collected.failed,
+            "fetch_errors": [error[:170] for error in collected.errors],
             "demo": demo,
         },
     )

@@ -90,6 +90,10 @@
   {% if digest.stats.get("failed_sources") %}
   <div style="margin-top:14px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#b5716c;">
     本期 {{ digest.stats.sources }} 个来源中有 {{ digest.stats.failed_sources | length }} 个没抓到：{{ digest.stats.failed_sources | join('、') }}
+    {% if digest.stats.get("fetch_errors") %}
+    {% for line in digest.stats.fetch_errors %}<br />· {{ line }}
+    {% endfor %}
+    {% endif %}
   </div>
   {% endif %}
 

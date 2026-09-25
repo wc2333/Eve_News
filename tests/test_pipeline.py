@@ -236,3 +236,10 @@ def test_history_dedupe_only_clears_older_days(tmp_path):
     assert store.seen_before("abc123", "2026-09-15", "2026-09-26") is True, "yesterdays brief must not repeat it"
     assert store.seen_before("abc123", "2026-09-26") is False, "outside the dedupe window"
     assert store.seen_before("unknown", "2026-09-15", "2026-09-26") is False
+
+
+def test_the_footer_names_the_reason_a_source_failed():
+    digest = _digest([SectionDigest(_section(1, "大模型与开源生态"), [_article("模型发布", "https://a/1")])])
+    digest.stats = {"sources": 15, "failed_sources": ["modelscope"], "fetch_errors": ["modelscope: GET https://modelscope.cn/api failed: 403 Forbidden"]}
+    page = render_html(digest, BRAND)
+    assert "403 Forbidden" in page, "an operator must see why a source went missing"

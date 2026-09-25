@@ -331,6 +331,7 @@ class Config:
                         headers=dict(spec.get("headers") or {}),
                         spec=dict(spec.get("json") or {}),
                         lookback_hours=int(spec.get("lookback_hours") or 0),
+                        proxy=str(spec.get("proxy") or ""),
                     )
                 )
             sections.append(
