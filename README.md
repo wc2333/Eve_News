@@ -43,6 +43,7 @@ evenews preview                  # 真实采集，只生成不发信
 evenews test-email               # 单独验证邮件通道
 evenews doctor --sources --model # 配置体检：来源连通、模型连通
 evenews run                      # 正式生成并发送
+evenews shot                     # 最新一期导出成高质量长图 digest.png（可选功能，见「长图导出」）
 ```
 
 每次运行在 `out/<日期>/` 得到 `digest.html` / `digest.md` / `digest.txt` / `digest.json`。
@@ -62,12 +63,27 @@ evenews web --port 9000 --no-browser   # 换端口 / 服务器上不自动开浏
 | 采集与模型 | `provider` / `base_url` / `model` / 各环节开关、过滤关键词、联网检索；带「测试模型连通」「测试所有来源」 |
 | 邮件 | SMTP 主机端口与 security、收发件人、报头署名；一键「发测试邮件」 |
 | 计划与密钥 | 每天几点发、时区、仅工作日；密钥写在这里，只落 `.env` |
-| 运行与预览 | 离线试跑、生成预览、立即发送，页面内直接看最新一期 |
+| 运行与预览 | 离线试跑、生成预览、立即发送，页面内直接看最新一期，可保存 / 复制长图 |
 | 高级 YAML | 整份 `config.yaml` 直接编辑，保存前走一遍真实校验，不通过不落盘 |
 
 - 默认只监听 `127.0.0.1`，别在生产机上 `--host 0.0.0.0` 开放到局域网。
 - 密钥只写进 `.env`，接口只回「是否已设置 + 长度」，绝不回传明文；`config.yaml` 里只存变量名。
 - 图形界面保存会重写 `config.yaml`（丢注释，注释版模板看 `config.example.yaml`），同时留一份 `config.yaml.bak` 兜底。
+
+## 长图导出（长截图 / 剪贴板）
+
+把版式导出成一张高质量长图，方便丢群里 / 贴文档。渲染走**真 Chromium 内核**（Playwright），2× DPI 起，中文和配色都是所见即所得：
+
+```bash
+pip install "eve-news[shot]"          # 可选依赖，装进虚拟环境
+.venv/bin/playwright install chromium # 下载浏览器内核（约 170 MB，一次性）
+
+evenews shot                          # 最新一期 → out/<日期>/digest.png
+evenews shot --date 2026-09-29        # 指定日期
+evenews shot --width 900 --scale 3    # 更宽 / 更高 DPI（1-4）
+```
+
+设置页「运行与预览」里同样有 **保存长图 PNG** 和 **复制长图到剪贴板** 两个按钮：复制走浏览器剪贴板 API（`localhost` 或 https 下可用，Chrome / Edge 没问题），复制不动就点保存。剪贴板里是 PNG，微信 / 飞书 / 文档直接粘。没装引擎时按钮会明确提示缺哪一步，不影响其他功能。
 
 ## 公司品牌
 

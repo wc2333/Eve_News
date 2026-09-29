@@ -216,7 +216,15 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
   </div>
   <div class="card">
     <h2>最新简报预览</h2>
-    <div class="actions"><button class="act" id="reloadPreview">重新载入</button></div>
+    <div class="actions">
+      <button class="act" id="reloadPreview">重新载入</button>
+      <button class="act" id="shotDownload">保存长图 PNG</button>
+      <button class="act" id="shotCopy">复制长图到剪贴板</button>
+      <label style="font-weight:normal;padding-top:6px">DPI <select id="shotScale">
+        <option value="2">2×（推荐）</option><option value="1">1×</option><option value="3">3×</option><option value="4">4×</option>
+      </select></label>
+    </div>
+    <p class="hint">长图由真 Chromium 内核整页渲染（默认 2× DPI，越高清文件越大）。需要 <code>pip install "eve-news[shot]"</code> 并 <code>playwright install chromium</code>；「复制」走浏览器剪贴板（localhost/https 下可用），失败就改用「保存」。</p>
     <iframe id="preview" title="digest"></iframe>
   </div>
   <div class="card">
@@ -506,6 +514,29 @@ nodes("[data-action]").forEach((button) => {
   };
 });
 document.getElementById("reloadPreview").onclick = () => reload();
+function shotQuery() {
+  const p = new URLSearchParams({ scale: document.getElementById("shotScale").value || "2" });
+  if (state.latest && state.latest.date) p.set("date", state.latest.date);
+  return p.toString();
+}
+document.getElementById("shotDownload").onclick = () => { window.location.href = "/api/shot?" + shotQuery(); };
+document.getElementById("shotCopy").onclick = async () => {
+  const btn = document.getElementById("shotCopy");
+  btn.disabled = true; toast("正在渲染长图，大约几秒…");
+  try {
+    const r = await fetch("/api/shot?" + shotQuery());
+    if (!r.ok) {
+      let msg = "HTTP " + r.status;
+      try { msg = (await r.json()).error || msg; } catch (ignored) {}
+      throw new Error(msg);
+    }
+    const blob = await r.blob();
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    toast("长图已复制到剪贴板");
+  } catch (error) {
+    toast("复制失败：" + error.message + "（可以改用「保存长图」下载）", true);
+  } finally { btn.disabled = false; }
+};
 document.getElementById("saveYaml").onclick = async () => {
   try {
     const data = await api("/api/yaml", { yaml: document.getElementById("yamlBox").value }, "PUT");

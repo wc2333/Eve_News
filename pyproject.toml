@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+shot = ["playwright>=1.40"]   # 长图导出：装完再跑 playwright install chromium
 
 [project.scripts]
 evenews = "evenews.cli:main"

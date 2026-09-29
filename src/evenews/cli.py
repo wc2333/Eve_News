@@ -131,6 +131,28 @@ def cmd_preview(args: argparse.Namespace) -> int:
     return code
 
 
+def cmd_shot(args: argparse.Namespace) -> int:
+    from .shot import engine_status, latest_html, render_png
+
+    config = _config(args)
+    ok, why = engine_status()
+    if not ok:
+        print(f"长图引擎不可用：{why}", file=sys.stderr)
+        return 2
+    root = Path(args.out) if args.out else config.out_root
+    if args.date:
+        target = root / str(args.date) / "digest.html"
+        target = target if target.is_file() else None
+    else:
+        target = latest_html(root)
+    if target is None:
+        print("还没有现成的简报，先 evenews preview 生成一期", file=sys.stderr)
+        return 2
+    path = render_png(target, target.parent / "digest.png", width=args.width, scale=args.scale)
+    print(f"长图: {path}")
+    return 0
+
+
 def cmd_daemon(args: argparse.Namespace) -> int:
     config = _config(args)
     if not _print_problems(config, need_email=True):
@@ -337,6 +359,13 @@ def build_parser() -> argparse.ArgumentParser:
     preview = common(sub.add_parser("preview", help="只生成不发送（等价 run --dry-run）"))
     preview.add_argument("--open", action="store_true", help="生成后用系统浏览器打开 HTML")
     preview.set_defaults(func=cmd_preview)
+
+    shot = sub.add_parser("shot", help="把 digest.html 导出为高质量长图 digest.png")
+    shot.add_argument("--date", help="指定日期 YYYY-MM-DD，默认最新一期")
+    shot.add_argument("--out", help="输出根目录，默认配置里的 out_dir")
+    shot.add_argument("--width", type=int, default=720, help="版心宽度（CSS 像素），默认 720")
+    shot.add_argument("--scale", type=int, default=2, help="DPI 倍数 1-4，默认 2（越高越清晰，文件越大）")
+    shot.set_defaults(func=cmd_shot)
 
     daemon = sub.add_parser("daemon", help="常驻进程，按 schedule.time 每天运行")
     daemon.set_defaults(func=cmd_daemon)

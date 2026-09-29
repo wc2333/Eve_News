@@ -278,6 +278,26 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if not html.is_file():
                     raise WebError(f"还没有生成 {date or '任何一天'} 的简报")
                 return self._send(200, html.read_bytes(), "text/html; charset=utf-8")
+            if path == "/api/shot":
+                from .shot import engine_status, latest_html, render_png
+
+                config = self._config()
+                ok, why = engine_status()
+                if not ok:
+                    raise WebError("长图引擎没装：" + why)
+                raw_date = (query.get("date") or [""])[0]
+                if raw_date and not DATE_DIR.match(raw_date):
+                    raise WebError("date 得是 YYYY-MM-DD")
+                try:
+                    scale = max(1, min(4, int((query.get("scale") or ["2"])[0])))
+                except ValueError:
+                    raise WebError("scale 得是 1-4 的整数")
+                target = (Path(config.out_root) / raw_date / "digest.html") if raw_date else latest_html(Path(config.out_root))
+                if target is None or not Path(target).is_file():
+                    raise WebError("还没有现成的简报，先去「运行与预览」生成一期")
+                png = Path(target).parent / "digest.png"
+                render_png(Path(target), png, scale=scale)   # 每次现渲染，保证和最新 HTML 一致
+                return self._send(200, png.read_bytes(), "image/png")
             raise WebError(f"未知接口：{path}")
         except Exception as exc:  # noqa: BLE001 - one error shape for the whole page
             self._error(exc)
