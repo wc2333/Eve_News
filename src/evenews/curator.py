@@ -6,7 +6,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 
-from .article import enrich_articles, material
+from .article import ENRICH_TIMEOUT, enrich_articles, material
 from .config import CollectionConfig, LLMConfig
 from .llm import BaseLLM
 from .models import Article, Digest, Section, SectionDigest
@@ -237,9 +237,10 @@ def curate_section(
 
     if collection.fetch_content:
         # Only the shortlist pays for this, and only when the feed gave us a one-liner.
+        # 补抓是加料不是命根子：短超时封顶，别让死页面把早报拖成中午报。
         enrich_articles(
             [article for article, _ in pool],
-            timeout=collection.timeout,
+            timeout=min(collection.timeout, ENRICH_TIMEOUT),
             proxy=collection.proxy,
             headers=collection.headers,
         )

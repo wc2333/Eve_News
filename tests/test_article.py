@@ -47,3 +47,27 @@ def test_the_model_reads_the_fetched_body(config):
     article.body = "正文里的关键数字与时间点都在这里，模型应当读到这一段材料。"
     _ask_model(Spy(config.llm), config.sections[0], [(0, article)])
     assert "正文里的关键数字" in captured["candidates"][0]["summary"]
+
+
+def test_parallel_enrich_dedupes_by_url_and_tolerates_dead_pages(monkeypatch):
+    from evenews import article as article_module
+    from evenews.article import enrich_articles
+    from evenews.models import Article
+
+    calls = []
+
+    def fake_fetch(url, **kwargs):
+        calls.append(url)
+        if "dead.example" in url:
+            raise OSError("dead page")
+        return "并发抓回来的正文。"
+
+    monkeypatch.setattr(article_module, "fetch_body", fake_fetch)
+    arts = [
+        Article(title="同页两转载", url="http://dup.example/x", source="s", raw_summary="短导语一"),
+        Article(title="同页第二篇", url="http://dup.example/x", source="s", raw_summary="短导语二"),
+        Article(title="死页面", url="http://dead.example/y", source="s", raw_summary="短导语三"),
+    ]
+    assert enrich_articles(arts) == 2
+    assert calls.count("http://dup.example/x") == 1, "同一 URL 只抓一次"
+    assert arts[2].body == "", "抓不到就沿用订阅摘要，不许炸整期"
