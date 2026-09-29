@@ -361,6 +361,8 @@ class Config:
                     sources=resolved,
                     extra_prompt=str(entry.get("extra_prompt") or ""),
                     max_items=int(entry.get("max_items") or 6),
+                    skip_today=bool(entry.get("skip_today", False)),
+                    freshness_first=bool(entry.get("freshness_first", False)),
                 )
             )
         if not sections:

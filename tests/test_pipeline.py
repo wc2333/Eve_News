@@ -416,3 +416,80 @@ def test_the_date_outsizes_the_fine_print_it_shares_a_strip_with():
     date_cell = re.search(r"<td[^>]*>2026-09-25</td>", page).group(0)
     assert "font-size:19px" in date_cell, "the date is what people read first on the strip"
     assert "font-size:19px" not in page[page.index(date_cell) + len(date_cell):page.index("</tr>", page.index(date_cell))], "classification and timestamp stay small"
+
+
+def _release_articles():
+    return [
+        Article(title="开源大模型权重发布：70B 模型登顶榜单 128K 上下文 2 连冠", url="https://x/old",
+                source="hf", published="2026-09-20", raw_summary="模型 开源 权重"),
+        Article(title="小模型微调新权重更新", url="https://x/fresh",
+                source="hf", published="2026-09-24", raw_summary="模型 微调 权重"),
+        Article(title="模型榜单更新：多个开源权重上榜", url="https://x/today",
+                source="hf", published="2026-09-25", raw_summary="模型 开源 权重"),
+    ]
+
+
+def _curate(config, section, articles):
+    return curate_section(
+        section,
+        articles,
+        llm=MockLLM(config.llm),
+        collection=config.collection,
+        llm_cfg=config.llm,
+        run_date="2026-09-25",
+    )
+
+
+def test_morning_release_section_skips_today_and_leads_with_latest(config):
+    section = config.sections[0]
+    section.skip_today = True
+    section.freshness_first = True
+    section.max_items = 3
+    digest = _curate(config, section, _release_articles())
+    urls = [item.url for item in digest.items]
+    assert "https://x/today" not in urls          # 当天凌晨上传的留给明天
+    assert urls[0] == "https://x/fresh"           # 昨天的最新一条排最前
+    assert [item.published for item in digest.items] == sorted(
+        [item.published for item in digest.items], reverse=True
+    )
+    scores = {item.url: item.score for item in digest.items}
+    assert scores["https://x/old"] > scores["https://x/fresh"]  # 分数再高也排在更新的后面
+
+
+def test_other_sections_keep_scoring_order(config):
+    section = config.sections[0]
+    digest = _curate(config, section, _release_articles())
+    urls = [item.url for item in digest.items]
+    assert "https://x/today" in urls              # 不开早报模式则照常收当天
+    assert [item.score for item in digest.items] == sorted(
+        [item.score for item in digest.items], reverse=True
+    )
+
+
+def test_fixture_release_section_shows_yesterday_not_today(config, fixtures_dir):
+    from evenews.models import Source
+
+    section = config.sections[0]
+    section.skip_today = True
+    section.freshness_first = True
+    # 样例 JSON 里没有中文关键词，本测试只验证日期开关，不验证关键词
+    config.collection.require_keywords = []
+    # 内置 hf_trending 样例：createdAt 一个今天凌晨、一个昨天，另有一条个人仓库
+    section.sources = [Source(name="hf_trending", url="https://hf-mirror.com/api/models", type="json",
+                              spec={"title": "modelId", "url": ["modelId"], "base_url": "https://hf-mirror.com",
+                                    "date": "createdAt", "summary": ["tags"],
+                                    "facts": ["likes", "trendingScore"],
+                                    "require": ["likes>=30", "trendingScore>=1"]})]
+    collected = harvest([section], config.collection, now=NOW, fixtures_dir=fixtures_dir)
+    digest = curate_section(
+        section,
+        collected.by_section[section.id],
+        llm=MockLLM(config.llm),
+        collection=config.collection,
+        llm_cfg=config.llm,
+        run_date="2026-09-25",
+    )
+    urls = [item.url for item in digest.items]
+    assert any("Demo-Vision-7B" in u for u in urls)             # 昨天的新模型在
+    assert all("Demo-V4-32B" not in u for u in urls)            # 当天凌晨上传的被留到明天
+    assert all("weekend-sandbox" not in u for u in urls)        # 个人练手仓库本来就被 require 挡掉

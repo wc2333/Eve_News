@@ -44,6 +44,8 @@ class Section:
     sources: list[Source] = field(default_factory=list)
     extra_prompt: str = ""
     max_items: int = 6
+    skip_today: bool = False       # 早报模式：不收当天日期的条目，最新只排到昨天
+    freshness_first: bool = False  # 按发布日期从新到旧排，分数只做门槛与同日排序
 
     def keyword_hits(self, *texts: str) -> list[str]:
         blob = " ".join(t for t in texts if t).lower()
@@ -57,6 +59,8 @@ class Section:
             "enabled": self.enabled,
             "keywords": list(self.keywords),
             "max_items": self.max_items,
+            "skip_today": self.skip_today,
+            "freshness_first": self.freshness_first,
             "sources": [s.to_dict() for s in self.sources],
         }
 

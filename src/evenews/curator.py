@@ -210,6 +210,14 @@ def curate_section(
     today = datetime.fromisoformat(run_date) if run_date else datetime.now()
     not_before = (today - timedelta(days=collection.dedupe_days)).date().isoformat()
 
+    if section.skip_today:
+        # 早报在清晨发：当天日期的条目才挂几个小时，热度与影响都还没定型，留给明天那一期。
+        today_iso = today.date().isoformat()
+        before = len(candidates)
+        candidates = [a for a in candidates if not (a.published and a.published >= today_iso)]
+        if len(candidates) < before:
+            log.info("板块 %s：早报模式，跳过 %d 条当天日期的条目", section.id, before - len(candidates))
+
     kept: list[tuple[Article, float]] = []
     for article in candidates:
         if not is_relevant(article, collection):
@@ -220,7 +228,11 @@ def curate_section(
         article.keywords = hits
         kept.append((article, rule_score(article, hits, run_date)))
 
-    kept.sort(key=lambda pair: pair[1], reverse=True)
+    if section.freshness_first:
+        # 新模型速览这类板块看的是「有没有更新的」：先按发布日期倒序，分数只用于同日之内分高下。
+        kept.sort(key=lambda pair: (pair[0].published or "", pair[1]), reverse=True)
+    else:
+        kept.sort(key=lambda pair: pair[1], reverse=True)
     pool = kept[: max(section.max_items * 3, llm_cfg.batch_size)]
 
     if collection.fetch_content:
@@ -264,7 +276,10 @@ def curate_section(
         article.score = round(final_score, 3)
         curated.append(article)
 
-    curated.sort(key=lambda a: a.score, reverse=True)
+    if section.freshness_first:
+        curated.sort(key=lambda a: (a.published or "", a.score), reverse=True)
+    else:
+        curated.sort(key=lambda a: a.score, reverse=True)
     unique: list[Article] = []
     for article in curated:
         if any(similar(article.title, other.title) for other in unique):

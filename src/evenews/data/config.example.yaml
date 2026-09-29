@@ -82,7 +82,7 @@ llm:
 collection:
   mode: feeds               # feeds(只用来源池) | llm(优先模型检索) | hybrid(两者都跑)
   lookback_hours: 30        # 只看最近这么多小时内的条目
-  per_source_limit: 30      # 每个来源最多取多少条
+  per_source_limit: 50      # 每个来源最多取多少条（json 来源按接口返回顺序截断：trending 榜尾部常有刚上榜的新模型，太短会截掉）
   dedupe_days: 10           # 多少天内不重复推送同一篇
   timeout: 25
   retries: 1              # 单个来源失败后重试几次
@@ -141,7 +141,7 @@ sources:
       base_url: https://modelscope.cn
       require: [IsPGC]            # 只留平台/机构发布的内容，个人帖不抓
   hf_trending:
-    url: https://hf-mirror.com/api/models?sort=trendingScore&direction=-1&limit=30
+    url: https://hf-mirror.com/api/models?sort=trendingScore&direction=-1&limit=50
     proxy: none                   # 镜像站本来就是给境内直连用的，别绕代理
     type: json                    # HuggingFace 官方 API 境内不通，走 hf-mirror 镜像，直连即可
     lookback_hours: 336           # 本来源单独放宽到 14 天：模型上榜往往比发布晚几天
@@ -152,7 +152,8 @@ sources:
       date: createdAt
       summary: [tags]             # 接口没有正文，就把 tags 当材料给模型
       facts: [pipeline_tag, library_name, likes, downloads, trendingScore]
-      require: [likes>=30, trendingScore>=1]   # 只要新且有热度的模型，个人练手仓库自动过滤
+      require: [likes>=10, trendingScore>=1]    # 只要新且有人气的模型，个人练手仓库自动过滤；
+                                                # 门槛卡到 30 会把昨天刚上榜的新模型挡在门外
   google_ai:
     url: https://blog.google/technology/ai/rss/
   arxiv_cl:
@@ -190,6 +191,10 @@ sections:
     max_items: 4
     sources: [hf_trending, modelscope]
     extra_prompt: 每条讲清楚模型是什么、谁发布的、参数或能力规模、许可证与能不能本地部署；材料里没有的指标不要评价、不要编。
+    # 早报在清晨发：当天刚上传几小时的模型热度还没定型，先不收，最新只排到昨天；
+    # 再按上传日期从新到旧排，让「速览」永远看得见最新上榜那批（分数只做门槛与同日内排序）。
+    skip_today: true
+    freshness_first: true
     keywords: [模型, 权重, 开源, 发布, LLM, Qwen, DeepSeek, Llama, GGUF, 多模态, 推理, 微调, MoE, safetensors, diffusers]
 
   - id: edge_ai

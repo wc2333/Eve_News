@@ -355,6 +355,10 @@ function renderSections() {
       "<b>" + section.title + "</b><span class='tags'>" + section.id + "   来源：" + (section.sources || []).join("、") + "</span></div>" +
       "<p class='hint'>" + (section.description || "") + "</p>" +
       "<div class='row'><label>条数上限</label><input type='number' class='sec-max' value='" + section.max_items + "'></div>" +
+      "<div class='row'><label>收录与排序</label><div>" +
+      "<label style='font-weight:normal;display:block'><input type='checkbox' class='sec-skip-today' " + (section.skip_today ? "checked" : "") + "> 早报模式：不收当天日期的条目，最新只排到昨天</label>" +
+      "<label style='font-weight:normal;display:block'><input type='checkbox' class='sec-fresh' " + (section.freshness_first ? "checked" : "") + "> 最新的排前面（按发布日期排序，分数只做门槛与同日排序）</label>" +
+      "</div></div>" +
       "<div class='row'><label>关键词（每行一个）</label><textarea class='sec-keys' rows='4'>" + (section.keywords || []).join("\n") + "</textarea></div>" +
       "<div class='row'><label>给模型的额外要求</label><textarea class='sec-extra' rows='2'></textarea></div>";
     card.querySelector(".sec-extra").value = "";
@@ -379,6 +383,8 @@ async function saveSections() {
       id: section.id,
       enabled: card.querySelector(".sec-on").checked,
       max_items: Number(card.querySelector(".sec-max").value) || section.max_items,
+      skip_today: card.querySelector(".sec-skip-today").checked,
+      freshness_first: card.querySelector(".sec-fresh").checked,
       keywords: lines(".sec-keys").length ? lines(".sec-keys") : section.keywords,
     };
   });
