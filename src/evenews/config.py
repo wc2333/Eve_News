@@ -200,6 +200,13 @@ class EmailConfig:
             issues.append("email.to 至少需要一个收件人")
         if not self.password:
             issues.append("email 密码为空（检查 email.password 或 password_env 指向的环境变量）")
+        if self.username and not self.username.isascii():
+            issues.append(
+                "email.username 含中文：SMTP 登录名必须是邮箱地址（如 xxx@qq.com），协议不收中文；"
+                "显示名请写进 email.from：AI 每日资讯 <xxx@qq.com>"
+            )
+        if self.from_address and "@" not in self.from_address:
+            issues.append("email.from 里必须含邮箱地址（显示名写在地址前面的尖括号里）")
         if self.security not in {"ssl", "starttls", "none"}:
             issues.append("email.security 只能是 ssl / starttls / none")
         return issues

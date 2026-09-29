@@ -83,3 +83,18 @@ def test_section_flags_default_and_parse(tmp_path, raw_config):
     reloaded = Config.load(saved)
     assert reloaded.sections[0].skip_today is True
     assert reloaded.sections[0].freshness_first is True
+
+
+def test_email_guardrails_catch_display_name_misplaced_as_login():
+    from evenews.config import EmailConfig
+
+    bad = EmailConfig(smtp_host="smtp.qq.com", from_address="bot@qq.com",
+                      to=["a@b.c"], password="x", username="AI 每日资讯")
+    problems = bad.problems()
+    assert any("email.username" in p and "邮箱地址" in p for p in problems), \
+        "中文登录名必须被 problems() 拦下并给出改法"
+
+    # 正确写法：登录名是纯邮箱地址，中文显示名放进 from 的尖括号前。
+    good = EmailConfig(smtp_host="smtp.qq.com", from_address="AI 每日资讯 <bot@qq.com>",
+                       to=["a@b.c"], password="x", username="bot@qq.com")
+    assert good.problems() == []

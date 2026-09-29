@@ -108,6 +108,12 @@ def send(config: EmailConfig, message: EmailMessage) -> None:
                 client.send_message(message, from_addr=parseaddr(config.from_address)[1], to_addrs=recipients)
             log.info("已发送给 %d 位收件人", len(recipients))
             return
+        except UnicodeEncodeError as exc:
+            # 中文混进了 SMTP 协议字段（多半是把显示名填成了登录名），重试也没用，直说。
+            raise MailError(
+                "SMTP 登录名/信封地址必须是 ASCII：email.username 填完整邮箱地址（如 xxx@qq.com），"
+                "中文显示名请写进 email.from 的尖括号前，例如 AI 每日资讯 <xxx@qq.com>"
+            ) from exc
         except Exception as exc:  # noqa: BLE001 - surface every SMTP failure the same way
             last_error = exc
             log.warning("发送失败（第 %d 次）：%s", attempt + 1, exc)
