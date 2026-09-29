@@ -163,10 +163,12 @@ collection:
   mode: hybrid          # feeds 只用来源池 | llm 以模型检索为主 | hybrid 两者都跑
 llm:
   search:
-    provider: tavily    # none | tavily | serper
+    provider: bing      # none | bing | tavily | serper
     api_key_env: EVE_NEWS_SEARCH_API_KEY
     queries_per_section: 2   # 每个板块让模型写几条检索词
 ```
+
+`bing` 是免密钥线路：直接抓 Bing 结果页并带 24 小时/一周时间过滤，不用任何 API Key（服务器要能直连 www.bing.com）。付费线路 `tavily` / `serper` 质量更稳，密钥填进 `.env` 的 `EVE_NEWS_SEARCH_API_KEY` 即可，`bing` 用不上它。注意 DeepSeek / OpenAI 这类对话模型本身没有检索接口，`provider: deepseek` 之类是不存在的——检索一律走上面三家。
 
 ## 邮件
 

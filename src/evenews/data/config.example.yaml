@@ -75,9 +75,10 @@ llm:
     lead: true              # 写今日摘要导语
   # 可选：让模型自己联网检索补充信息（留空则只用下面的固定来源）
   search:
-    provider: none          # none | tavily | serper
-    api_key_env: EVE_NEWS_SEARCH_API_KEY
+    provider: none          # none | bing(免密钥抓取) | tavily | serper
+    api_key_env: EVE_NEWS_SEARCH_API_KEY   # bing 不需要密钥；tavily/serper 才要填
     queries_per_section: 2
+    # days: 2               # 检索回溯天数：1 只收 24 小时内，2-7 收一周内（bing 生效）
 
 collection:
   mode: feeds               # feeds(只用来源池) | llm(优先模型检索) | hybrid(两者都跑)

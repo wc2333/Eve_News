@@ -2,21 +2,25 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import os
+import re
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from .config import LLMConfig
 from .models import Section
-from .net import HttpError, fetch_json
+from .net import HttpError, fetch_bytes, fetch_json
 
 log = logging.getLogger("evenews.search")
 
 ENDPOINTS = {
     "tavily": "https://api.tavily.com/search",
     "serper": "https://google.serper.dev/search",
+    "bing": "https://www.bing.com/search",
 }
+KEYFREE_PROVIDERS = {"bing"}   # 免密钥：直接抓搜索结果页，不查任何 API Key
 
 
 @dataclass
@@ -58,7 +62,9 @@ class SearchConfig:
 
     @property
     def ready(self) -> bool:
-        return self.provider not in {"", "none", "off"} and bool(self.api_key or self.endpoint)
+        if self.provider in {"", "none", "off"}:
+            return False
+        return bool(self.api_key or self.endpoint) or self.provider in KEYFREE_PROVIDERS
 
 
 def _domain(url: str) -> str:
@@ -118,6 +124,44 @@ def run_search(query: str, cfg: SearchConfig, *, limit: int = 12) -> list[dict]:
                 }
                 for row in rows
             ]
+        if cfg.provider == "bing":
+            # 免密钥抓取：直接读 Bing 搜索结果页，带 24 小时 / 一周时间过滤。
+            from .feeds import clean   # 函数内引入，别和 feeds 顶上来回绕
+
+            params = f"?q={quote(query)}&count={min(limit, cfg.max_results)}"
+            if (cfg.language or "").startswith("zh"):
+                params += "&setlang=zh-hans"
+            if cfg.days <= 1:
+                params += "&filters=ex1%3a%22ez1%22"   # 24 小时内
+            elif cfg.days <= 7:
+                params += "&filters=ex1%3a%22ez2%22"   # 一周内
+            raw = fetch_bytes(endpoint + params, timeout=cfg.timeout, retries=1,
+                              proxy=cfg.proxy or None, headers=cfg.headers or None)
+            page = raw.decode("utf-8", "replace")
+            rows: list[dict] = []
+            wanted = min(limit, cfg.max_results)
+            for block in re.findall(r'<li class="b_algo"[^>]*>(.*?)</li>', page, re.S):
+                head = re.search(r'<h2[^>]*>.*?<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', block, re.S) \
+                    or re.search(r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>', block, re.S)
+                if not head:
+                    continue
+                url = html.unescape(head.group(1)).strip()
+                # 标题里的 <strong>/<span> 直接去掉、不垫空格（中文标题垫了空格很难看）
+                title = clean(re.sub(r"<[^>]+>", "", head.group(2)), 240)
+                if not title or not url.startswith(("http://", "https://")):
+                    continue
+                snip = re.search(r"<p[^>]*>(.*?)</p>", block, re.S)
+                content = clean(snip.group(1), 800) if snip else title
+                content = re.sub(r"^\s*\d+\s*(分钟|小时|天|周)前\s*[·:，,]?\s*", "", content)
+                stamp = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", block)
+                published = f"{stamp.group(1)}-{int(stamp.group(2)):02d}-{int(stamp.group(3)):02d}" if stamp else ""
+                rows.append({"title": title, "url": url, "content": content,
+                             "published": published, "source": _domain(url)})
+                if len(rows) >= wanted:
+                    break
+            if not rows:
+                log.warning("Bing 检索没有解析到结果（页面改版或被拦）：[%s]", query)
+            return rows
         log.warning("暂不支持的检索供应商: %s", cfg.provider)
     except HttpError as exc:
         log.warning("联网检索失败 [%s]: %s", query, exc)

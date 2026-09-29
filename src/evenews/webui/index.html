@@ -118,7 +118,9 @@ iframe { width:100%; height:560px; border:1px solid var(--line); background:var(
       <div class="row"><label>代理 proxy</label><input type="text" placeholder="留空=跟随系统；none=不走代理" data-path="collection.proxy"></div>
       <div class="row"><label>模型 proxy</label><input type="text" placeholder="留空=跟随系统；none=不走代理" data-path="llm.proxy"></div>
       <div class="row"><label>search.provider</label><select data-path="llm.search.provider">
-        <option>none</option><option>tavily</option><option>serper</option></select></div>
+        <option>none</option><option>bing</option><option>tavily</option><option>serper</option></select></div>
+      <div class="note">bing=免密钥直接抓结果页（要能直连 www.bing.com，带 24h/一周时间过滤）；tavily/serper 是付费检索，密钥填「计划与密钥」；DeepSeek/OpenAI 这类对话模型本身没有检索接口，检索不能填它们的名字</div>
+      <div class="row"><label>检索回溯天数 days</label><input type="number" data-path="llm.search.days" placeholder="1=24小时内，2-7=一周内"></div>
       <div class="row"><label>检索词/板块</label><input type="number" data-path="llm.search.queries_per_section"></div>
     </div>
     <div class="row"><label>require_keywords</label><textarea data-path="collection.require_keywords" data-list="1"></textarea></div>

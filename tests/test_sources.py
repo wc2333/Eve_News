@@ -351,3 +351,40 @@ def test_a_source_can_pin_its_own_proxy(raw_config: dict, tmp_path, monkeypatch)
         feeds.fetch_source(source, cfg.collection)
 
     assert used == ["none", "http://127.0.0.1:7890"], "the source wins over the collection default"
+
+
+BING_PAGE = (
+    '<ol>'
+    '<li class="b_algo"><h2><a href="https://a.example/post1">开源大模型<span>发布</span>新权重</a></h2>'
+    '<p>1 天前 · 2026年9月28日 某公司发布了 70B 权重。</p></li>'
+    '<li class="b_algo"><h2><a href="https://b.example/post2?x=1&amp;y=2">智算中心开工</a></h2>'
+    '<p>3 天前 · 摘要二</p></li>'
+    '</ol>'
+)
+
+
+def test_bing_provider_parses_results_without_key(monkeypatch):
+    from evenews import search as search_module
+
+    seen = {}
+
+    def fake_fetch(url, **kwargs):
+        seen["url"] = str(url)
+        return BING_PAGE.encode("utf-8")
+
+    monkeypatch.setattr(search_module, "fetch_bytes", fake_fetch)
+    cfg = search_module.SearchConfig(provider="bing", api_key="", days=1)
+    assert cfg.ready, "bing 免密钥也应该算 ready"
+    rows = search_module.run_search("大模型 发布", cfg, limit=8)
+    assert "ex1%3a%22ez1%22" in seen["url"], "days<=1 应该带 24 小时过滤"
+    assert [r["url"] for r in rows] == ["https://a.example/post1", "https://b.example/post2?x=1&y=2"]
+    assert rows[0]["title"] == "开源大模型发布新权重"
+    assert rows[0]["published"] == "2026-09-28"
+    assert not rows[0]["content"].startswith("1 天前"), "相对时间前缀应该被去掉"
+
+
+def test_keyless_bing_is_ready_but_tavily_needs_a_key():
+    from evenews.search import SearchConfig
+
+    assert SearchConfig(provider="bing").ready
+    assert not SearchConfig(provider="tavily").ready
