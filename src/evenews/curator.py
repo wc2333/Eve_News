@@ -218,6 +218,14 @@ def curate_section(
         if len(candidates) < before:
             log.info("板块 %s：早报模式，跳过 %d 条当天日期的条目", section.id, before - len(candidates))
 
+    if section.max_age_days > 0:
+        # 新鲜窗口：只保留 published >= 今天-N 的条目。没有日期的（不少 JSON 源不带日期）不冤枉，照放。
+        cutoff = (today - timedelta(days=section.max_age_days)).date().isoformat()
+        before = len(candidates)
+        candidates = [a for a in candidates if not a.published or a.published >= cutoff]
+        if len(candidates) < before:
+            log.info("板块 %s：新鲜窗口 %d 天，淘汰 %d 条早于 %s 的旧条目", section.id, section.max_age_days, before - len(candidates), cutoff)
+
     kept: list[tuple[Article, float]] = []
     for article in candidates:
         if not is_relevant(article, collection):

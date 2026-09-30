@@ -368,6 +368,7 @@ function renderSections() {
       "<div class='row'><label>收录与排序</label><div>" +
       "<label style='font-weight:normal;display:block'><input type='checkbox' class='sec-skip-today' " + (section.skip_today ? "checked" : "") + "> 早报模式：不收当天日期的条目，最新只排到昨天</label>" +
       "<label style='font-weight:normal;display:block'><input type='checkbox' class='sec-fresh' " + (section.freshness_first ? "checked" : "") + "> 最新的排前面（按发布日期排序，分数只做门槛与同日排序）</label>" +
+      "<label style='font-weight:normal;display:block'>只收最近 <input type='number' class='sec-age' style='width:60px' min='0' value='" + (section.max_age_days || 0) + "'> 天内的条目（0=不限；源没给日期的条目不受此限）</label>" +
       "</div></div>" +
       "<div class='row'><label>关键词（每行一个）</label><textarea class='sec-keys' rows='4'>" + (section.keywords || []).join("\n") + "</textarea></div>" +
       "<div class='row'><label>给模型的额外要求</label><textarea class='sec-extra' rows='2'></textarea></div>";
@@ -395,6 +396,7 @@ async function saveSections() {
       max_items: Number(card.querySelector(".sec-max").value) || section.max_items,
       skip_today: card.querySelector(".sec-skip-today").checked,
       freshness_first: card.querySelector(".sec-fresh").checked,
+      max_age_days: Math.max(0, Number(card.querySelector(".sec-age").value) || 0),
       keywords: lines(".sec-keys").length ? lines(".sec-keys") : section.keywords,
     };
   });

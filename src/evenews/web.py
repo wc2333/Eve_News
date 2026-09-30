@@ -239,6 +239,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     "max_items": section.max_items,
                     "skip_today": section.skip_today,
                     "freshness_first": section.freshness_first,
+                    "max_age_days": section.max_age_days,
                     "sources": [source.name for source in section.sources],
                 }
                 for section in config.sections
@@ -336,7 +337,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     entry = entries.get(str(update["id"]))
                     if entry is None:
                         raise WebError(f"未知板块：{update['id']}")
-                    for field in ("enabled", "keywords", "max_items", "extra_prompt", "title", "description", "skip_today", "freshness_first"):
+                    for field in ("enabled", "keywords", "max_items", "extra_prompt", "title", "description", "skip_today", "freshness_first", "max_age_days"):
                         if field in update:
                             entry[field] = update[field]
                 problems = save_raw(Path(self.config_path), raw)

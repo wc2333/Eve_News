@@ -74,15 +74,19 @@ def test_section_flags_default_and_parse(tmp_path, raw_config):
     # 新模型速览是早报板块：模板默认就带早报模式
     assert by_id["model_releases"].skip_today is True
     assert by_id["model_releases"].freshness_first is True
+    assert by_id["model_releases"].max_age_days == 3, "模板默认带 3 天新鲜窗口"
+    assert by_id["llm_oss"].max_age_days == 0, "普通板块默认不开窗口"
     # 其他板块默认不启用，配置写了才生效，且能随 save 往返
     assert by_id["llm_oss"].skip_today is False
     raw_config["sections"][0]["skip_today"] = True
     raw_config["sections"][0]["freshness_first"] = True
+    raw_config["sections"][0]["max_age_days"] = 7
     config = Config.from_dict(raw_config, tmp_path / "config.yaml")
     saved = config.save()
     reloaded = Config.load(saved)
     assert reloaded.sections[0].skip_today is True
     assert reloaded.sections[0].freshness_first is True
+    assert reloaded.sections[0].max_age_days == 7
 
 
 def test_email_guardrails_catch_display_name_misplaced_as_login():

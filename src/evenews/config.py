@@ -370,6 +370,7 @@ class Config:
                     max_items=int(entry.get("max_items") or 6),
                     skip_today=bool(entry.get("skip_today", False)),
                     freshness_first=bool(entry.get("freshness_first", False)),
+                    max_age_days=max(0, int(entry.get("max_age_days") or 0)),
                 )
             )
         if not sections:

@@ -196,6 +196,7 @@ sections:
     # 再按上传日期从新到旧排，让「速览」永远看得见最新上榜那批（分数只做门槛与同日内排序）。
     skip_today: true
     freshness_first: true
+    max_age_days: 3   # 只收最近 3 天上榜的新模型；更早的（哪怕还挂在趋势榜上）不进早报
     keywords: [模型, 权重, 开源, 发布, LLM, Qwen, DeepSeek, Llama, GGUF, 多模态, 推理, 微调, MoE, safetensors, diffusers]
 
   - id: edge_ai

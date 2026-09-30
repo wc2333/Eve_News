@@ -46,6 +46,7 @@ class Section:
     max_items: int = 6
     skip_today: bool = False       # 早报模式：不收当天日期的条目，最新只排到昨天
     freshness_first: bool = False  # 按发布日期从新到旧排，分数只做门槛与同日排序
+    max_age_days: int = 0          # 新鲜窗口（天）：只收 published >= 今天-N 的条目，0=不限
 
     def keyword_hits(self, *texts: str) -> list[str]:
         blob = " ".join(t for t in texts if t).lower()
@@ -61,6 +62,7 @@ class Section:
             "max_items": self.max_items,
             "skip_today": self.skip_today,
             "freshness_first": self.freshness_first,
+            "max_age_days": self.max_age_days,
             "sources": [s.to_dict() for s in self.sources],
         }
 

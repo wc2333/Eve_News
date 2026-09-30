@@ -493,3 +493,24 @@ def test_fixture_release_section_shows_yesterday_not_today(config, fixtures_dir)
     assert any("Demo-Vision-7B" in u for u in urls)             # 昨天的新模型在
     assert all("Demo-V4-32B" not in u for u in urls)            # 当天凌晨上传的被留到明天
     assert all("weekend-sandbox" not in u for u in urls)        # 个人练手仓库本来就被 require 挡掉
+
+
+def test_max_age_window_drops_stale_trending_items(config):
+    section = config.sections[0]
+    section.skip_today = True
+    section.freshness_first = True
+    section.max_age_days = 3          # 运行日 09-25 → 窗口 [09-22, 09-25)
+    digest = _curate(config, section, _release_articles())
+    urls = {item.url for item in digest.items}
+    assert "https://x/today" not in urls, "当天条目照旧不收"
+    assert all(item.url != "https://x/old" for item in digest.items), "09-20 超出 3 天窗口必须淘汰"
+    assert urls == {"https://x/fresh"}, f"窗口内只剩 09-24 那条，实际 {urls}"
+
+
+def test_max_age_zero_keeps_old_items(config):
+    section = config.sections[0]
+    section.skip_today = True
+    section.max_age_days = 0          # 显式关闭：老行为不变
+    digest = _curate(config, section, _release_articles())
+    urls = {item.url for item in digest.items}
+    assert "https://x/old" in urls
